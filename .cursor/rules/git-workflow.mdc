@@ -1,0 +1,15 @@
+---
+description: Git branching, commits and PR workflow for DeskLite
+alwaysApply: true
+---
+
+# Git & PR Workflow
+
+- `main` is protected: never push to it directly. Branch → PR → 1 review → green CI → merge.
+- Branch names: `feature/<area>-<short>`, `fix/<short>`, `chore/<short>` (e.g. `feature/login-ui`).
+- **Conventional Commits**: `feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:` + short imperative summary.
+- Keep PRs **small** and focused; link the `DESK-` ticket; fill the PR template.
+- If you add a config variable, update `.env.example` in the **same** PR.
+- After a teammate's PR merges: `git pull origin main`; run `docker compose up --build` only if
+  Dockerfiles or dependencies changed; run pending Alembic migrations (`alembic upgrade head`).
+- Don't commit secrets, `.env`, `node_modules/`, `.venv/`, or build output.

@@ -1,0 +1,29 @@
+---
+description: DeskLite core project context and non-negotiable rules
+alwaysApply: true
+---
+
+# DeskLite — Core Rules
+
+DeskLite is an internal support-ticket system. Roles: **customer, agent, admin**.
+Stack: Next.js + React + TS + Tailwind (`frontend/`), FastAPI + Python 3.12 + Pydantic v2 (`backend/`),
+PostgreSQL, MinIO, JWT in httpOnly cookies, Docker, GitHub Actions.
+
+Read `AGENTS.md` for the full blueprint. The full conventions there win over your own defaults.
+
+## Always do
+- Take identity (`requester_id`, role, current user) from the validated JWT — **never** from the request body.
+- Whitelist writable fields in Pydantic `Create`/`Update` schemas (anti mass-assignment).
+- Enforce **RBAC** (role allowed?) **and** object-level ownership (may this user see this row?) on every by-ID access.
+- Use parameterized queries / the ORM only. Hash passwords. Sanitize comment content.
+- Keep secrets out of git; update `.env.example` when adding a config var.
+
+## Never do
+- Reorganize the repo structure, change the API contract, or alter the DB schema without team agreement.
+- Return another user's data on an IDOR attempt — answer 403/404.
+- Hard-code secrets, or expose `password_hash`.
+
+## Conventions
+- API base `/api/v1`, plural nouns, **snake_case** JSON, errors as `{ "detail": "..." }`.
+- Integer PKs; security via authorization, not hidden IDs.
+- Small PRs, Conventional Commits, link a `DESK-` ticket.

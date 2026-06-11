@@ -1,0 +1,21 @@
+# CODEOWNERS — auto-requests the right reviewer when files change.
+# ACTION REQUIRED: replace the @placeholders below with each person's real GitHub username.
+# Docs: https://docs.github.com/articles/about-code-owners
+
+# Default owner for everything (DevOps).
+*                       @lis-github
+
+# Frontend
+/frontend/              @egzona-github @rrezart-github
+
+# Backend
+/backend/               @valza-github @paulina-github
+
+# Data layer & migrations — Paulina gatekeeps schema changes.
+/backend/app/models/    @paulina-github
+/backend/alembic/       @paulina-github
+
+# DevOps / CI / config — Lis gatekeeps.
+/docker-compose.yml     @lis-github
+/.github/               @lis-github
+/.env.example           @lis-github

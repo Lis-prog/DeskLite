@@ -1,0 +1,18 @@
+---
+description: Next.js / React / Tailwind frontend conventions for DeskLite
+globs: frontend/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Frontend (Next.js) Conventions
+
+- Next.js App Router, TypeScript `strict`. `PascalCase.tsx` for components in `components/`.
+- **Server Components by default**; add `"use client"` only for state/effects/events.
+- All API access goes through the typed client in `lib/api.ts` — no scattered `fetch()` calls.
+- Use Tailwind **design tokens** from `tailwind.config.ts` (`brand`, `status-*`, `priority-*`,
+  `surface`, `muted`, `border`). No raw hex colors in components.
+- Read JSON as **snake_case** (matches the API). Don't rename fields ad hoc.
+- Every list/form needs **empty**, **loading**, and **error** states. Components must be responsive
+  and accessible (labels, focus rings, contrast).
+- Show only role-permitted actions in the UI — but never rely on the UI for security (the API enforces it).
+- No `any` without a comment explaining why.

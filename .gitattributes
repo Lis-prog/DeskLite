@@ -1,0 +1,16 @@
+# Normalize line endings so Windows and Mac don't create noisy diffs.
+* text=auto eol=lf
+
+# Keep Windows batch scripts as CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Treat these as binary.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
