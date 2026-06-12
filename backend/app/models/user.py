@@ -1,9 +1,17 @@
 from __future__ import annotations
-from datetime import datetime, timezone
+
+from datetime import datetime
+from typing import TYPE_CHECKING
+
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base import Base
 
+if TYPE_CHECKING:
+    from app.models.attachment import Attachment
+    from app.models.comment import Comment
+    from app.models.ticket import Ticket
 
 ROLES = ("customer", "agent", "admin")
 
@@ -21,16 +29,16 @@ class User(Base):
     )
 
     
-    tickets_raised: Mapped[list["Ticket"]] = relationship(  # type: ignore[name-defined]
+    tickets_raised: Mapped[list[Ticket]] = relationship(  # type: ignore[name-defined]
         "Ticket", foreign_keys="Ticket.requester_id", back_populates="requester"
     )
-    tickets_assigned: Mapped[list["Ticket"]] = relationship(  # type: ignore[name-defined]
+    tickets_assigned: Mapped[list[Ticket]] = relationship(  # type: ignore[name-defined]
         "Ticket", foreign_keys="Ticket.assignee_id", back_populates="assignee"
     )
-    comments: Mapped[list["Comment"]] = relationship(  # type: ignore[name-defined]
+    comments: Mapped[list[Comment]] = relationship(  # type: ignore[name-defined]
         "Comment", back_populates="author"
     )
-    attachments: Mapped[list["Attachment"]] = relationship(  # type: ignore[name-defined]
+    attachments: Mapped[list[Attachment]] = relationship(  # type: ignore[name-defined]
         "Attachment", back_populates="uploader"
     )
 

@@ -1,9 +1,18 @@
 from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
+
 from sqlalchemy import DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base import Base
 
+if TYPE_CHECKING:
+    from app.models.attachment import Attachment
+    from app.models.audit_log import AuditLog
+    from app.models.comment import Comment
+    from app.models.user import User
 
 STATUSES = ("open", "in_progress", "resolved", "closed")
 PRIORITIES = ("low", "medium", "high", "urgent")
@@ -37,19 +46,19 @@ class Ticket(Base):
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    requester: Mapped["User"] = relationship(  # type: ignore[name-defined]
+    requester: Mapped[User] = relationship(  # type: ignore[name-defined]
         "User", foreign_keys=[requester_id], back_populates="tickets_raised"
     )
-    assignee: Mapped["User | None"] = relationship(  # type: ignore[name-defined]
+    assignee: Mapped[User | None] = relationship(  # type: ignore[name-defined]
         "User", foreign_keys=[assignee_id], back_populates="tickets_assigned"
     )
-    comments: Mapped[list["Comment"]] = relationship(  # type: ignore[name-defined]
+    comments: Mapped[list[Comment]] = relationship(  # type: ignore[name-defined]
         "Comment", back_populates="ticket", cascade="all, delete-orphan"
     )
-    attachments: Mapped[list["Attachment"]] = relationship(  # type: ignore[name-defined]
+    attachments: Mapped[list[Attachment]] = relationship(  # type: ignore[name-defined]
         "Attachment", back_populates="ticket", cascade="all, delete-orphan"
     )
-    audit_logs: Mapped[list["AuditLog"]] = relationship(  # type: ignore[name-defined]
+    audit_logs: Mapped[list[AuditLog]] = relationship(  # type: ignore[name-defined]
         "AuditLog", back_populates="ticket", cascade="all, delete-orphan"
     )
 

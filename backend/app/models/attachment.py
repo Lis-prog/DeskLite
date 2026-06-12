@@ -1,8 +1,16 @@
 from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
+
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.ticket import Ticket
+    from app.models.user import User
 
 
 class Attachment(Base):
@@ -25,10 +33,10 @@ class Attachment(Base):
     )
 
    
-    ticket: Mapped["Ticket"] = relationship(  
+    ticket: Mapped[Ticket] = relationship(  
         "Ticket", back_populates="attachments"
     )
-    uploader: Mapped["User"] = relationship(  
+    uploader: Mapped[User] = relationship(  
         "User", back_populates="attachments"
     )
 
