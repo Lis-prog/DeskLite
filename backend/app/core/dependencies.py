@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.session import get_db
 
-# replace with the real User 
 
 class _UserStub:
     """Temporary stand-in until app.models.user.User exists."""
@@ -17,19 +16,18 @@ class _UserStub:
         self.role = role
         self.email = email
 
-# Dependency
 
 def get_current_user(
-    access_token: str | None = Cookie(default=None),
+    request: Request,
     db: Session = Depends(get_db),
 ) -> _UserStub:
-
     credentials_exc = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Not authenticated",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    access_token = request.cookies.get("access_token")
     if access_token is None:
         raise credentials_exc
 
@@ -50,9 +48,6 @@ def get_current_user(
     return _UserStub(id=int(user_id), role=role, email=email or "")
 
 
-# RBAC helpers
-
-
 def require_roles(*roles: str):
     def _check(user: _UserStub = Depends(get_current_user)) -> _UserStub:
         if user.role not in roles:
@@ -61,5 +56,4 @@ def require_roles(*roles: str):
                 detail="You do not have permission to perform this action.",
             )
         return user
-
     return _check

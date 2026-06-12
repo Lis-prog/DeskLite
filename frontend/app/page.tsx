@@ -1,45 +1,18 @@
-import { ApiStatus } from "@/components/ApiStatus";
-import { StatusBadge } from "@/components/StatusBadge";
+import { PriorityBadge } from "@/components/PriorityBadge";
+import { Spinner } from "@/components/Spinner";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
+import { Avatar } from "@/components/Avatar";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
 
-export default function HomePage() {
-  return (
-    <div className="space-y-8">
-      <section>
-        <h1 className="text-2xl font-bold">DeskLite is running 🎉</h1>
-        <p className="mt-2 text-muted">
-          Sprint 0 skeleton. The foundation is up — start building your tickets on top of it.
-        </p>
-      </section>
-
-      <section className="rounded-lg border border-border bg-surface p-5">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-          Backend connection
-        </h2>
-        <div className="mt-3">
-          <ApiStatus />
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-border bg-surface p-5">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-          Design tokens preview
-        </h2>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <StatusBadge status="open" />
-          <StatusBadge status="in_progress" />
-          <StatusBadge status="resolved" />
-          <StatusBadge status="closed" />
-        </div>
-      </section>
-
-      <section className="text-sm text-muted">
-        <p>
-          API docs:{" "}
-          <a className="text-brand underline" href="http://localhost:8000/docs">
-            localhost:8000/docs
-          </a>
-        </p>
-      </section>
-    </div>
-  );
-}
+// brenda return(), pas StatusBadge-ve ekzistuese:
+<PriorityBadge priority="low" />
+<PriorityBadge priority="urgent" />
+<Spinner />
+<Avatar name="Paulina Delija" />
+<EmptyState title="No tickets yet" description="Create your first ticket." />
+<ErrorState message="Could not load tickets." onRetry={() => alert('retry')} />
+<Card>
+  <CardHeader><p>Card test</p></CardHeader>
+  <CardBody><p>Content here</p></CardBody>
+</Card>
