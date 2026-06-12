@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -14,7 +14,7 @@ client = TestClient(app, raise_server_exceptions=True)
 
 def _make_token(user_id: int, role: str = "customer", email: str = "u@test.com") -> str:
     """Mint a valid access JWT for test use."""
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_minutes)
+    expire = datetime.now(UTC) + timedelta(minutes=settings.access_token_minutes)
     return jwt.encode(
         {"sub": str(user_id), "role": role, "email": email, "exp": expire},
         settings.jwt_secret,

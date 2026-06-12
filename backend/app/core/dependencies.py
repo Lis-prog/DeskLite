@@ -43,7 +43,7 @@ def get_current_user(
         if user_id is None or role is None:
             raise credentials_exc
     except JWTError:
-        raise credentials_exc
+        raise credentials_exc from None
 
     return _UserStub(id=int(user_id), role=role, email=email or "")
 
