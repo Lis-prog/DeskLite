@@ -27,9 +27,8 @@ def health_db(db: Session = Depends(get_db)):
 @router.get("/health/authed")
 def health_authed(current_user: _UserStub = Depends(get_current_user)):
     """
-    Auth smoke-test.  Requires a valid JWT cookie.
+    Auth smoke-test. Requires a valid JWT cookie.
     Returns the caller's id and role so you can verify the token round-trip.
-    Never returns sensitive fields (password_hash etc.).
     """
     return {
         "status": "ok",
