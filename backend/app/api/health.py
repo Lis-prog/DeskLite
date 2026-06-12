@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.core.dependencies import _UserStub, get_current_user
 from app.db.session import get_db
 
 router = APIRouter(tags=["health"])
@@ -21,3 +22,16 @@ def health_db(db: Session = Depends(get_db)):
         return {"status": "ok", "database": "connected"}
     except Exception:
         return {"status": "degraded", "database": "unavailable"}
+
+
+@router.get("/health/authed")
+def health_authed(current_user: _UserStub = Depends(get_current_user)):
+    """
+    Auth smoke-test. Requires a valid JWT cookie.
+    Returns the caller's id and role so you can verify the token round-trip.
+    """
+    return {
+        "status": "ok",
+        "user_id": current_user.id,
+        "role": current_user.role,
+    }
