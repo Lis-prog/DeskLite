@@ -3,10 +3,12 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from jose import jwt
 
 from app.core.config import settings
+from app.core.dependencies import _UserStub, require_roles
 from app.main import app
 
 client = TestClient(app, raise_server_exceptions=True)
@@ -29,6 +31,14 @@ def test_health_ok():
     body = res.json()
     assert body["status"] == "ok"
     assert body["service"] == "desklite-backend"
+
+
+def test_health_db_ok():
+    res = client.get("/api/v1/health/db")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["status"] == "ok"
+    assert body["database"] == "connected"
 
 
 def test_root_ok():
@@ -64,6 +74,20 @@ def test_health_authed_valid_token_returns_caller_identity():
     body = res.json()
     assert body["user_id"] == 42
     assert body["role"] == "agent"
+
+
+def test_require_roles_allows_matching_role():
+    check = require_roles("admin")
+    user = _UserStub(id=1, role="admin", email="a@test.com")
+    assert check(user=user) is user
+
+
+def test_require_roles_denies_wrong_role():
+    check = require_roles("admin")
+    user = _UserStub(id=1, role="customer", email="a@test.com")
+    with pytest.raises(HTTPException) as exc:
+        check(user=user)
+    assert exc.value.status_code == 403
 
 
 # IDOR negative-test PATTERN

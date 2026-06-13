@@ -29,7 +29,7 @@ def get_current_user(
 
     access_token = request.cookies.get("access_token")
     if access_token is None:
-        raise credentials_exc
+        raise credentials_exc from None
 
     try:
         payload = jwt.decode(
@@ -41,7 +41,7 @@ def get_current_user(
         role: str | None = payload.get("role")
         email: str | None = payload.get("email")
         if user_id is None or role is None:
-            raise credentials_exc
+            raise credentials_exc from None
     except JWTError:
         raise credentials_exc from None
 
