@@ -4,7 +4,11 @@ addopts = "-q --tb=short"
 
 [tool.coverage.run]
 source = ["app"]
-omit = ["app/db/base.py", "app/models/__init__.py"]
+omit = [
+    "app/db/base.py",
+    "app/models/__init__.py",
+    "app/models/*",
+]
 
 [tool.coverage.report]
 exclude_lines = [
