@@ -26,3 +26,19 @@ class UserRead(BaseModel):
     full_name: str
     role: Role
     created_at: datetime
+
+
+class LoginRequest(BaseModel):
+    """Credentials for the login endpoint. Identity is derived from the
+    matched user, never from any other client-supplied field."""
+
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=128)
+
+
+class TokenResponse(BaseModel):
+    """Issued JWTs. Tokens are also set as httpOnly cookies on the response."""
+
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"

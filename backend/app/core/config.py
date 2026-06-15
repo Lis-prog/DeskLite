@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 15
     refresh_token_days: int = 7
+    # Set the `Secure` flag on auth cookies. Keep False for local http dev;
+    # set True in any environment served over https.
+    cookie_secure: bool = False
 
     # Object storage (MinIO / S3)
     s3_endpoint: str = "http://minio:9000"
