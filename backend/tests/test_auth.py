@@ -59,3 +59,64 @@ def test_register_rejects_short_password(client, db_session):
         },
     )
     assert res.status_code == 422
+
+
+def test_login_valid_credentials_returns_tokens(client, db_session):
+    create_user(db_session, email="login@test.com", password="password123")
+    res = client.post(
+        "/api/v1/auth/login",
+        json={"email": "login@test.com", "password": "password123"},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["access_token"]
+    assert body["refresh_token"]
+    assert body["token_type"] == "bearer"
+    # Tokens are also delivered as httpOnly cookies.
+    assert "access_token" in res.cookies
+    assert "refresh_token" in res.cookies
+
+
+def test_login_sets_httponly_cookies(client, db_session):
+    create_user(db_session, email="cookie@test.com", password="password123")
+    res = client.post(
+        "/api/v1/auth/login",
+        json={"email": "cookie@test.com", "password": "password123"},
+    )
+    assert res.status_code == 200
+    set_cookie_headers = " ".join(res.headers.get_list("set-cookie")).lower()
+    assert "httponly" in set_cookie_headers
+
+
+def test_login_wrong_password_returns_401(client, db_session):
+    create_user(db_session, email="wrongpass@test.com", password="password123")
+    res = client.post(
+        "/api/v1/auth/login",
+        json={"email": "wrongpass@test.com", "password": "not-the-password"},
+    )
+    assert res.status_code == 401
+    assert res.json()["detail"] == "Invalid email or password."
+
+
+def test_login_unknown_email_returns_401(client, db_session):
+    res = client.post(
+        "/api/v1/auth/login",
+        json={"email": "ghost@test.com", "password": "password123"},
+    )
+    assert res.status_code == 401
+    assert res.json()["detail"] == "Invalid email or password."
+
+
+def test_login_unknown_email_and_wrong_password_share_message(client, db_session):
+    """Anti user-enumeration: both failure modes return the identical error."""
+    create_user(db_session, email="enum@test.com", password="password123")
+    wrong_pass = client.post(
+        "/api/v1/auth/login",
+        json={"email": "enum@test.com", "password": "nope"},
+    )
+    unknown = client.post(
+        "/api/v1/auth/login",
+        json={"email": "missing@test.com", "password": "password123"},
+    )
+    assert wrong_pass.status_code == unknown.status_code == 401
+    assert wrong_pass.json()["detail"] == unknown.json()["detail"]
