@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/Button";
+
 export default function LoginPage() {
   return (
     <div className="mx-auto max-w-md">
@@ -9,29 +11,32 @@ export default function LoginPage() {
 
         <form className="mt-6 space-y-4">
           <div>
-            <label className="text-sm font-medium">Email</label>
+            <label htmlFor="email" className="text-sm font-medium">
+              Email
+            </label>
             <input
+              id="email"
               type="email"
               placeholder="you@example.com"
-              className="mt-1 w-full rounded-md border border-border bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+              className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </div>
 
           <div>
-            <label className="text-sm font-medium">Password</label>
+            <label htmlFor="password" className="text-sm font-medium">
+              Password
+            </label>
             <input
+              id="password"
               type="password"
               placeholder="Enter your password"
-              className="mt-1 w-full rounded-md border border-border bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+              className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </div>
 
-          <button
-            type="button"
-            className="w-full rounded-md bg-brand px-4 py-2 font-medium text-white hover:opacity-90"
-          >
+          <Button type="submit" className="w-full">
             Sign in
-          </button>
+          </Button>
         </form>
       </div>
     </div>
