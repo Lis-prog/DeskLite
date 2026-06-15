@@ -3,19 +3,19 @@ import { StatusBadge } from "@/components/StatusBadge";
 
 const tickets = [
   {
-    id: "DL-101",
+    id: 101,
     title: "Cannot access internal dashboard",
     priority: "high",
     status: "open",
   },
   {
-    id: "DL-102",
+    id: 102,
     title: "Email notifications not received",
     priority: "medium",
     status: "in_progress",
   },
   {
-    id: "DL-103",
+    id: 103,
     title: "Request for new laptop setup",
     priority: "low",
     status: "resolved",
@@ -39,7 +39,7 @@ export default function TicketsPage() {
             className="flex items-center justify-between border-b border-border p-4 last:border-b-0"
           >
             <div>
-              <p className="text-sm text-muted">{ticket.id}</p>
+              <p className="text-sm text-muted">Ticket #{ticket.id}</p>
               <h2 className="font-semibold">{ticket.title}</h2>
             </div>
 
