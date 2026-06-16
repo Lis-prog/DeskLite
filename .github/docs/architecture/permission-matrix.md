@@ -29,6 +29,13 @@ A user's role is **assigned by an admin**, never chosen at sign-up. Registration
 | `GET /api/v1/health/authed` | yes | yes | yes |
 | `GET /api/v1/admin/users` | 403 | 403 | yes |
 | `PATCH /api/v1/admin/users/{id}/role` | 403 | 403 | yes |
+| `POST /api/v1/tickets` | yes | yes | yes |
+| `GET /api/v1/tickets` | yes | yes | yes |
+| `GET /api/v1/tickets/{id}` | yes | yes | yes |
+
+List and by-ID ticket routes are open to every authenticated role; **which rows**
+are returned is enforced by object-level scope (see table below): customer → own
+(`requester_id`), agent → assigned (`assignee_id`), admin → all.
 
 "yes" = allowed when authenticated. "public" = no token required. "403" = forbidden
 for an authenticated caller; an unauthenticated caller always gets **401**.
