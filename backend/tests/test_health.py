@@ -68,8 +68,9 @@ def test_health_authed_invalid_token_returns_401():
     )
     assert res.status_code == 401
 
-    def test_health_authed_refresh_token_returns_401():
-        """Refresh token used on protected route → 401."""
+
+def test_health_authed_refresh_token_returns_401():
+    """Refresh token used on protected route → 401."""
     expire = datetime.now(UTC) + timedelta(days=settings.refresh_token_days)
     token = jwt.encode(
         {
@@ -116,32 +117,3 @@ def test_require_roles_denies_wrong_role():
     with pytest.raises(HTTPException) as exc:
         check(user=user)
     assert exc.value.status_code == 403
-
-
-# IDOR negative-test PATTERN
-
-
-@pytest.mark.skip(reason="Stub — replace URL + fixture once ticket router exists (DESK-XXX)")
-def test_customer_cannot_read_another_users_ticket():
-    """
-    IDOR guard: customer B requesting ticket owned by customer A gets 403 or 404,
-    never the actual data.
-
-    How to activate:
-    1. Remove the @pytest.mark.skip decorator.
-    2. Create a ticket owned by user_id=1 in the test DB, capture its ticket_id.
-    3. Replace /api/v1/tickets/{ticket_id} with the real path.
-    """
-    ticket_id = 999  # TODO: insert a real ticket owned by user 1
-
-    token = _make_token(user_id=2, role="customer", email="b@test.com")
-    res = client.get(
-        f"/api/v1/tickets/{ticket_id}",
-        headers={"Cookie": f"access_token={token}"},
-    )
-
-    assert res.status_code in (403, 404), (
-        f"IDOR: user 2 received {res.status_code} on a ticket owned by user 1"
-    )
-    assert "title" not in res.json()
-    

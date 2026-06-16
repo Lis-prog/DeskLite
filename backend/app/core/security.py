@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 import bcrypt
-from jose import jwt
+from jose import JWTError, jwt
 
 from app.core.config import settings
 
@@ -65,3 +65,21 @@ def create_refresh_token(*, subject: int, role: str, email: str) -> str:
         token_type="refresh",
         expires_delta=timedelta(days=settings.refresh_token_days),
     )
+
+
+def decode_token(token: str, *, expected_type: TokenType) -> dict[str, Any]:
+    """Validate a JWT and return its claims. Raises ValueError on bad/wrong-type tokens."""
+    try:
+        payload = jwt.decode(
+            token,
+            settings.jwt_secret,
+            algorithms=[settings.jwt_algorithm],
+        )
+    except JWTError as exc:
+        raise ValueError("Invalid token") from exc
+
+    if payload.get("type") != expected_type:
+        raise ValueError("Wrong token type")
+    if payload.get("sub") is None or payload.get("role") is None:
+        raise ValueError("Missing claims")
+    return payload
