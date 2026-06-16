@@ -4,7 +4,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 export default function HomePage() {
   return (
     <div className="space-y-8">
-      <section>
+      <section> n
         <h1 className="text-2xl font-bold">DeskLite is running 🎉</h1>
         <p className="mt-2 text-muted">
           Sprint 0 skeleton. The foundation is up — start building your tickets on top of it.
