@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.security import create_access_token, hash_password
 from app.db.session import engine, get_db
 from app.main import app
+from app.models.ticket import Ticket
 from app.models.user import User
 
 
@@ -60,3 +61,26 @@ def auth_header(user: User) -> dict[str, str]:
     so authenticated/role-gated endpoints can be exercised in tests."""
     token = create_access_token(subject=user.id, role=user.role, email=user.email)
     return {"Cookie": f"access_token={token}"}
+
+
+def create_ticket(
+    db: Session,
+    *,
+    requester_id: int,
+    title: str = "Test ticket",
+    description: str = "",
+    priority: str = "medium",
+    status: str = "open",
+    assignee_id: int | None = None,
+) -> Ticket:
+    ticket = Ticket(
+        title=title,
+        description=description,
+        priority=priority,
+        status=status,
+        requester_id=requester_id,
+        assignee_id=assignee_id,
+    )
+    db.add(ticket)
+    db.flush()
+    return ticket
