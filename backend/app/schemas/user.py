@@ -36,6 +36,13 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class RoleUpdate(BaseModel):
+    """Admin-only role assignment. This dedicated endpoint is the *only* place
+    a role may be set, so accepting `role` here is intentional (not mass-assignment)."""
+
+    role: Role
+
+
 class TokenResponse(BaseModel):
     """Issued JWTs. Tokens are also set as httpOnly cookies on the response."""
 

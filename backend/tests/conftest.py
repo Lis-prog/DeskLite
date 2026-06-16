@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.core.security import hash_password
+from app.core.security import create_access_token, hash_password
 from app.db.session import engine, get_db
 from app.main import app
 from app.models.user import User
@@ -53,3 +53,10 @@ def create_user(
     db.add(user)
     db.flush()
     return user
+
+
+def auth_header(user: User) -> dict[str, str]:
+    """Build a Cookie header carrying a valid access token for `user`,
+    so authenticated/role-gated endpoints can be exercised in tests."""
+    token = create_access_token(subject=user.id, role=user.role, email=user.email)
+    return {"Cookie": f"access_token={token}"}
