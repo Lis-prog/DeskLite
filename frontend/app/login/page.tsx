@@ -2,11 +2,13 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { api } from "@/lib/api"; 
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -18,27 +20,22 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/v1/auth/login`, {
+      await api("/auth/login", {
         method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
-          email,
-          password,
+            email,
+            password,
         }),
-      });
+    });
 
-      if (!response.ok) {
-        setMessage("Invalid email or password.");
-        return;
-      }
-
-      setMessage("Login successful.");
-    } catch {
-      setMessage("Could not connect to the server.");
-    } finally {
+      router.push("/tickets");
+    } catch (error) {
+  if (error instanceof Error) {
+    setMessage(error.message);
+  } else {
+    setMessage("Could not connect to the server.");
+  }
+} finally {
       setIsSubmitting(false);
     }
   }
