@@ -4,8 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { api } from "@/lib/api"; 
-
+import { api } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,20 +21,14 @@ export default function LoginPage() {
     try {
       await api("/auth/login", {
         method: "POST",
-        body: JSON.stringify({
-            email,
-            password,
-        }),
-    });
-
+        body: JSON.stringify({ email, password }),
+      });
       router.push("/tickets");
     } catch (error) {
-  if (error instanceof Error) {
-    setMessage(error.message);
-  } else {
-    setMessage("Could not connect to the server.");
-  }
-} finally {
+      setMessage(
+        error instanceof Error ? error.message : "Could not connect to the server."
+      );
+    } finally {
       setIsSubmitting(false);
     }
   }
