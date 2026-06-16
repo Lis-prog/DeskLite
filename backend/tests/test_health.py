@@ -18,10 +18,16 @@ def _make_token(user_id: int, role: str = "customer", email: str = "u@test.com")
     """Mint a valid access JWT for test use."""
     expire = datetime.now(UTC) + timedelta(minutes=settings.access_token_minutes)
     return jwt.encode(
-        {"sub": str(user_id), "role": role, "email": email, "exp": expire},
-        settings.jwt_secret,
-        algorithm=settings.jwt_algorithm,
-    )
+    {
+        "sub": str(user_id),
+        "role": role,
+        "email": email,
+        "type": "access",
+        "exp": expire,
+    },
+    settings.jwt_secret,
+    algorithm=settings.jwt_algorithm,
+)
 
 # root
 
@@ -60,6 +66,28 @@ def test_health_authed_invalid_token_returns_401():
         "/api/v1/health/authed",
         headers={"Cookie": "access_token=not.a.real.token"},
     )
+    assert res.status_code == 401
+
+    def test_health_authed_refresh_token_returns_401():
+        """Refresh token used on protected route → 401."""
+    expire = datetime.now(UTC) + timedelta(days=settings.refresh_token_days)
+    token = jwt.encode(
+        {
+            "sub": "42",
+            "role": "agent",
+            "email": "agent@test.com",
+            "type": "refresh",
+            "exp": expire,
+        },
+        settings.jwt_secret,
+        algorithm=settings.jwt_algorithm,
+    )
+
+    res = client.get(
+        "/api/v1/health/authed",
+        headers={"Cookie": f"access_token={token}"},
+    )
+
     assert res.status_code == 401
 
 
