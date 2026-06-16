@@ -21,12 +21,17 @@ A user's role is **assigned by an admin**, never chosen at sign-up. Registration
 |---|:--:|:--:|:--:|
 | `POST /api/v1/auth/register` | public | public | public |
 | `POST /api/v1/auth/login` | public | public | public |
-| `POST /api/v1/auth/logout` | yes | yes | yes |
-| `POST /api/v1/auth/refresh` | yes | yes | yes |
-| `GET /api/v1/auth/me` | yes | yes | yes |
-| `GET /api/v1/auth/admin/ping` | 403 | 403 | yes |
+| `GET /api/v1/health`, `/health/db` | public | public | public |
+| `GET /api/v1/health/authed` | yes | yes | yes |
+| `GET /api/v1/admin/users` | 403 | 403 | yes |
+| `PATCH /api/v1/admin/users/{id}/role` | 403 | 403 | yes |
 
-"yes" = allowed when authenticated. "public" = no token required. "403" = forbidden.
+"yes" = allowed when authenticated. "public" = no token required. "403" = forbidden
+for an authenticated caller; an unauthenticated caller always gets "401".
+
+RBAC is enforced with `require_roles(...)` from `app/core/dependencies.py`. Admin-only
+routes live under the `/admin` router, which declares `require_roles("admin")` at the
+router level so every current and future route under it is gated by construction.
 
 ## Object-level access (ownership, IDOR defense)
 
