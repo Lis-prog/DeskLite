@@ -1,5 +1,8 @@
+import Link from "next/link";
+
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Button } from "@/components/ui/Button";
 
 const tickets = [
   {
@@ -25,11 +28,16 @@ const tickets = [
 export default function TicketsPage() {
   return (
     <div className="space-y-6">
-      <section>
-        <h1 className="text-2xl font-bold">Tickets</h1>
-        <p className="mt-2 text-muted">
-          View and track support requests in one place.
-        </p>
+      <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Tickets</h1>
+          <p className="mt-2 text-muted">
+            View and track support requests in one place.
+          </p>
+        </div>
+        <Link href="/tickets/new">
+          <Button type="button">New ticket</Button>
+        </Link>
       </section>
 
       <div className="rounded-lg border border-border bg-surface">
