@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from fastapi import Depends, HTTPException, Request, status
-from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.core.security import decode_token
 from app.db.session import get_db
 
 
@@ -32,22 +31,14 @@ def get_current_user(
         raise credentials_exc from None
 
     try:
-        payload = jwt.decode(
-            access_token,
-            settings.jwt_secret,
-            algorithms=[settings.jwt_algorithm],
-        )
-        user_id: str | None = payload.get("sub")
-        role: str | None = payload.get("role")
-        email: str | None = payload.get("email")
-        token_type: str | None = payload.get("type")
-
-        if user_id is None or role is None or token_type != "access":
-            raise credentials_exc from None
-    except JWTError:
+        payload = decode_token(access_token, expected_type="access")
+        user_id = payload["sub"]
+        role = payload["role"]
+        email = payload.get("email") or ""
+    except ValueError:
         raise credentials_exc from None
 
-    return _UserStub(id=int(user_id), role=role, email=email or "")
+    return _UserStub(id=int(user_id), role=role, email=email)
 
 
 def require_roles(*roles: str):
