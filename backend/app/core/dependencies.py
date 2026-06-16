@@ -37,10 +37,12 @@ def get_current_user(
             settings.jwt_secret,
             algorithms=[settings.jwt_algorithm],
         )
-        user_id: int | None = payload.get("sub")
+        user_id: str | None = payload.get("sub")
         role: str | None = payload.get("role")
         email: str | None = payload.get("email")
-        if user_id is None or role is None:
+        token_type: str | None = payload.get("type")
+
+        if user_id is None or role is None or token_type != "access":
             raise credentials_exc from None
     except JWTError:
         raise credentials_exc from None
