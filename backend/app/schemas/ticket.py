@@ -51,6 +51,34 @@ class TicketStatusUpdate(BaseModel):
     status: TicketStatus
 
 
+class TicketAssignmentUpdate(BaseModel):
+    """Admin-only assignment payload.
+
+    `assignee_id` is required (no default) so the value must be sent explicitly:
+    an integer assigns/reassigns, an explicit `null` unassigns. This prevents an
+    empty body or omitted field from silently clearing the current assignee.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    assignee_id: int | None = Field(ge=1)
+
+
+class SatisfactionRatingSubmit(BaseModel):
+    """Customer feedback after a ticket is closed."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    rating: int = Field(ge=1, le=5)
+
+
+class SatisfactionRatingRead(BaseModel):
+    """Read shape for persisted customer satisfaction feedback."""
+
+    rating: int = Field(ge=1, le=5)
+    submitted_at: datetime
+
+
 class TicketRead(BaseModel):
     """Full read shape returned by the API."""
 
