@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context";
+import { Nav } from "@/components/Nav";
 
 export const metadata: Metadata = {
   title: "DeskLite",
@@ -15,13 +17,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <header className="border-b border-border bg-surface">
-          <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-            <span className="text-lg font-semibold text-brand">DeskLite</span>
-            <span className="text-sm text-muted">Internal Support</span>
-          </div>
-        </header>
-        <main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
+        <AuthProvider>
+          <Nav />
+          <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+            {children}
+          </main>
+        </AuthProvider>
       </body>
     </html>
   );

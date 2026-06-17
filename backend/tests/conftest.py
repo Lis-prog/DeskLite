@@ -6,9 +6,11 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.core.security import hash_password
+import tests.bootstrap_env  # noqa: F401  # must run before app imports
+from app.core.security import create_access_token, create_refresh_token, hash_password
 from app.db.session import engine, get_db
 from app.main import app
+from app.models.ticket import Ticket
 from app.models.user import User
 
 
@@ -53,3 +55,37 @@ def create_user(
     db.add(user)
     db.flush()
     return user
+
+
+def auth_header(user: User) -> dict[str, str]:
+    """Build a Cookie header carrying a valid access token for `user`,
+    so authenticated/role-gated endpoints can be exercised in tests."""
+    token = create_access_token(subject=user.id, role=user.role, email=user.email)
+    return {"Cookie": f"access_token={token}"}
+
+
+def create_ticket(
+    db: Session,
+    *,
+    requester_id: int,
+    title: str = "Test ticket",
+    description: str = "",
+    priority: str = "medium",
+    status: str = "open",
+    assignee_id: int | None = None,
+) -> Ticket:
+    ticket = Ticket(
+        title=title,
+        description=description,
+        priority=priority,
+        status=status,
+        requester_id=requester_id,
+        assignee_id=assignee_id,
+    )
+    db.add(ticket)
+    db.flush()
+    return ticket
+def refresh_header(user: User) -> dict[str, str]:
+    """Build a Cookie header carrying a valid refresh token for `user`."""
+    token = create_refresh_token(subject=user.id, role=user.role, email=user.email)
+    return {"Cookie": f"refresh_token={token}"}

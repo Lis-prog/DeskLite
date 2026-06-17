@@ -2,14 +2,11 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
 
-export default function LoginPage() {
-  const router = useRouter();
-  const { refreshUser } = useAuth();
+export default function RegisterPage() {
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -21,18 +18,24 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await api("/auth/login", {
+      await api("/auth/register", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          full_name: fullName,
+          email,
+          password,
+        }),
       });
-      // Refresh the cached current-user snapshot so Nav, role-based defaults,
-      // and redirects see the authenticated user without a full page reload.
-      await refreshUser();
-      router.push("/tickets");
-      router.refresh();
+
+      setMessage("Registration successful. You can now log in.");
+      setFullName("");
+      setEmail("");
+      setPassword("");
     } catch (error) {
       setMessage(
-        error instanceof Error ? error.message : "Could not connect to the server."
+        error instanceof Error
+          ? error.message
+          : "Could not connect to the server."
       );
     } finally {
       setIsSubmitting(false);
@@ -42,12 +45,27 @@ export default function LoginPage() {
   return (
     <div className="mx-auto max-w-md">
       <div className="rounded-lg border border-border bg-surface p-6 shadow-sm">
-        <h1 className="text-2xl font-bold">Login to DeskLite</h1>
+        <h1 className="text-2xl font-bold">Create an account</h1>
         <p className="mt-2 text-sm text-muted">
-          Access your internal support tickets.
+          Register to start using DeskLite.
         </p>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor="fullName" className="text-sm font-medium">
+              Full name
+            </label>
+            <input
+              id="fullName"
+              type="text"
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              placeholder="Your full name"
+              required
+              className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </div>
+
           <div>
             <label htmlFor="email" className="text-sm font-medium">
               Email
@@ -72,7 +90,8 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="Enter your password"
+              placeholder="Minimum 8 characters"
+              minLength={8}
               required
               className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
             />
@@ -81,14 +100,14 @@ export default function LoginPage() {
           {message && <p className="text-sm text-muted">{message}</p>}
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in..." : "Sign in"}
+            {isSubmitting ? "Creating account..." : "Create account"}
           </Button>
         </form>
 
         <p className="mt-4 text-sm text-muted">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-brand underline">
-            Register
+          Already have an account?{" "}
+          <Link href="/login" className="text-brand underline">
+            Log in
           </Link>
         </p>
       </div>
