@@ -85,11 +85,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (user && user.role !== "admin") {
+    if (!user) {
+      router.replace("/login");
+      return;
+    }
+    if (user.role !== "admin") {
       router.replace("/tickets");
       return;
     }
-    if (!user) return;
 
     async function load() {
       try {

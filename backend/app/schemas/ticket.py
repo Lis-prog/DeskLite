@@ -54,12 +54,14 @@ class TicketStatusUpdate(BaseModel):
 class TicketAssignmentUpdate(BaseModel):
     """Admin-only assignment payload.
 
-    `assignee_id` is nullable so admins can also explicitly unassign a ticket.
+    `assignee_id` is required (no default) so the value must be sent explicitly:
+    an integer assigns/reassigns, an explicit `null` unassigns. This prevents an
+    empty body or omitted field from silently clearing the current assignee.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    assignee_id: int | None = Field(default=None, ge=1)
+    assignee_id: int | None = Field(ge=1)
 
 
 class SatisfactionRatingSubmit(BaseModel):
