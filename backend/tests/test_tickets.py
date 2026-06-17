@@ -193,6 +193,36 @@ def test_get_ticket_owner_can_read(client, db_session):
     assert res.status_code == 200
     assert res.json()["title"] == "My ticket"
 
+def test_assigned_agent_can_read_ticket(client, db_session):
+    agent = create_user(db_session, email="agent-read@test.com", role="agent")
+    customer = create_user(db_session, email="agent-cust@test.com", role="customer")
+    ticket = create_ticket(
+        db_session,
+        requester_id=customer.id,
+        assignee_id=agent.id,
+        title="Assigned ticket",
+    )
+
+    res = client.get(f"{TICKETS_URL}/{ticket.id}", headers=auth_header(agent))
+
+    assert res.status_code == 200
+    assert res.json()["title"] == "Assigned ticket"
+
+def test_unassigned_agent_cannot_read_ticket(client, db_session):
+    agent = create_user(db_session, email="agent-denied@test.com", role="agent")
+    other_agent = create_user(db_session, email="other-agent@test.com", role="agent")
+    customer = create_user(db_session, email="agent-owner@test.com", role="customer")
+    ticket = create_ticket(
+        db_session,
+        requester_id=customer.id,
+        assignee_id=other_agent.id,
+        title="Other agent ticket",
+    )
+
+    res = client.get(f"{TICKETS_URL}/{ticket.id}", headers=auth_header(agent))
+
+    assert res.status_code == 403
+    assert "title" not in res.json()
 
 def test_get_ticket_not_found(client, db_session):
     customer = create_user(db_session, email="missing@test.com", role="customer")
