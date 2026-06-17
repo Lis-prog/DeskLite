@@ -9,7 +9,7 @@ Safe to re-run: existing emails / ticket titles are skipped.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
@@ -52,7 +52,7 @@ SEED_USERS = [
 ]
 
 def _ago(days: int = 0, hours: int = 0) -> datetime:
-    return datetime.now(timezone.utc) - timedelta(days=days, hours=hours)
+    return datetime.now(UTC) - timedelta(days=days, hours=hours)
 
 
 def seed() -> None:
@@ -86,7 +86,6 @@ def seed() -> None:
         for email in list(user_map):
             user_map[email] = db.scalar(select(User).where(User.email == email))  # type: ignore[assignment]
 
-        admin   = user_map["admin@desklite.dev"]
         agent1  = user_map["agent@desklite.dev"]
         agent2  = user_map["agent2@desklite.dev"]
         carol   = user_map["customer@desklite.dev"]
@@ -95,23 +94,93 @@ def seed() -> None:
         # ── Tickets ──────────────────────────────────────────────────────────
         SEED_TICKETS = [
             # open — unassigned
-            dict(title="Cannot log in to the portal",       description="I get 401 every time I try to log in after the password reset.",         status="open",        priority="urgent",  requester=carol, assignee=None,   created_at=_ago(days=1)),
-            dict(title="Invoice PDF is blank",              description="When I download the May invoice it opens as a blank PDF.",                status="open",        priority="high",    requester=dan,   assignee=None,   created_at=_ago(days=2)),
-            dict(title="Add dark mode to the dashboard",    description="Feature request: a dark mode toggle would be great for late-night work.", status="open",        priority="low",     requester=carol, assignee=None,   created_at=_ago(days=3)),
-            dict(title="Bulk export tickets to CSV",        description="We need a way to export the full ticket list for reporting.",             status="open",        priority="medium",  requester=dan,   assignee=None,   created_at=_ago(days=4)),
+            dict(
+                title="Cannot log in to the portal",
+                description="I get 401 every time I try to log in after the password reset.",
+                status="open", priority="urgent",
+                requester=carol, assignee=None, created_at=_ago(days=1),
+            ),
+            dict(
+                title="Invoice PDF is blank",
+                description="When I download the May invoice it opens as a blank PDF.",
+                status="open", priority="high",
+                requester=dan, assignee=None, created_at=_ago(days=2),
+            ),
+            dict(
+                title="Add dark mode to the dashboard",
+                description="Feature request: a dark mode toggle would be great for late-night work.",
+                status="open", priority="low",
+                requester=carol, assignee=None, created_at=_ago(days=3),
+            ),
+            dict(
+                title="Bulk export tickets to CSV",
+                description="We need a way to export the full ticket list for reporting.",
+                status="open", priority="medium",
+                requester=dan, assignee=None, created_at=_ago(days=4),
+            ),
             # in_progress — assigned
-            dict(title="Email notifications not arriving",  description="Ticket update emails stopped arriving about 3 days ago.",                 status="in_progress", priority="high",    requester=carol, assignee=agent1, created_at=_ago(days=5)),
-            dict(title="Search returns wrong results",      description="Searching for 'billing' returns unrelated tickets.",                      status="in_progress", priority="medium",  requester=dan,   assignee=agent1, created_at=_ago(days=6)),
-            dict(title="Attachment upload fails for PDFs",  description="Images upload fine but PDFs always return a 500 error.",                  status="in_progress", priority="urgent",  requester=carol, assignee=agent2, created_at=_ago(days=7)),
-            dict(title="User profile page throws 404",      description="Navigating to /profile after login shows a 404.",                         status="in_progress", priority="high",    requester=dan,   assignee=agent2, created_at=_ago(days=8)),
+            dict(
+                title="Email notifications not arriving",
+                description="Ticket update emails stopped arriving about 3 days ago.",
+                status="in_progress", priority="high",
+                requester=carol, assignee=agent1, created_at=_ago(days=5),
+            ),
+            dict(
+                title="Search returns wrong results",
+                description="Searching for 'billing' returns unrelated tickets.",
+                status="in_progress", priority="medium",
+                requester=dan, assignee=agent1, created_at=_ago(days=6),
+            ),
+            dict(
+                title="Attachment upload fails for PDFs",
+                description="Images upload fine but PDFs always return a 500 error.",
+                status="in_progress", priority="urgent",
+                requester=carol, assignee=agent2, created_at=_ago(days=7),
+            ),
+            dict(
+                title="User profile page throws 404",
+                description="Navigating to /profile after login shows a 404.",
+                status="in_progress", priority="high",
+                requester=dan, assignee=agent2, created_at=_ago(days=8),
+            ),
             # resolved
-            dict(title="Cannot assign tickets to myself",   description="The assign-to-me button does nothing when clicked.",                      status="resolved",    priority="medium",  requester=carol, assignee=agent1, created_at=_ago(days=10)),
-            dict(title="Priority badge shows wrong colour", description="High-priority tickets show the medium colour in the list view.",           status="resolved",    priority="low",     requester=dan,   assignee=agent2, created_at=_ago(days=12)),
-            dict(title="Pagination broken on ticket list",  description="Clicking page 2 reloads page 1 instead.",                                 status="resolved",    priority="medium",  requester=carol, assignee=agent1, created_at=_ago(days=14)),
+            dict(
+                title="Cannot assign tickets to myself",
+                description="The assign-to-me button does nothing when clicked.",
+                status="resolved", priority="medium",
+                requester=carol, assignee=agent1, created_at=_ago(days=10),
+            ),
+            dict(
+                title="Priority badge shows wrong colour",
+                description="High-priority tickets show the medium colour in the list view.",
+                status="resolved", priority="low",
+                requester=dan, assignee=agent2, created_at=_ago(days=12),
+            ),
+            dict(
+                title="Pagination broken on ticket list",
+                description="Clicking page 2 reloads page 1 instead.",
+                status="resolved", priority="medium",
+                requester=carol, assignee=agent1, created_at=_ago(days=14),
+            ),
             # closed
-            dict(title="Dashboard loads slowly",            description="The admin dashboard takes 8+ seconds on first load.",                     status="closed",      priority="high",    requester=dan,   assignee=agent2, created_at=_ago(days=20)),
-            dict(title="Typo in registration success msg",  description="'Regstration successful' — missing an 'i'.",                              status="closed",      priority="low",     requester=carol, assignee=agent1, created_at=_ago(days=25)),
-            dict(title="Filter resets on page refresh",     description="Status filter selection is lost every time the page is refreshed.",        status="closed",      priority="medium",  requester=dan,   assignee=agent2, created_at=_ago(days=30)),
+            dict(
+                title="Dashboard loads slowly",
+                description="The admin dashboard takes 8+ seconds on first load.",
+                status="closed", priority="high",
+                requester=dan, assignee=agent2, created_at=_ago(days=20),
+            ),
+            dict(
+                title="Typo in registration success msg",
+                description="'Regstration successful' — missing an 'i'.",
+                status="closed", priority="low",
+                requester=carol, assignee=agent1, created_at=_ago(days=25),
+            ),
+            dict(
+                title="Filter resets on page refresh",
+                description="Status filter selection is lost every time the page is refreshed.",
+                status="closed", priority="medium",
+                requester=dan, assignee=agent2, created_at=_ago(days=30),
+            ),
         ]
 
         created_tickets = 0
