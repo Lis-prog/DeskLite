@@ -218,3 +218,115 @@ def test_admin_can_read_any_ticket(client, db_session):
     res = client.get(f"{TICKETS_URL}/{ticket.id}", headers=auth_header(admin))
     assert res.status_code == 200
     assert res.json()["title"] == "Any"
+
+
+# --- Update -----------------------------------------------------------------
+
+def test_update_ticket_requires_auth(client, db_session):
+    customer = create_user(db_session, email="upd-noauth@test.com", role="customer")
+    ticket = create_ticket(db_session, requester_id=customer.id)
+    res = client.patch(f"{TICKETS_URL}/{ticket.id}", json={"title": "x"})
+    assert res.status_code == 401
+
+
+def test_owner_can_update_whitelisted_fields(client, db_session):
+    customer = create_user(db_session, email="upd-owner@test.com", role="customer")
+    ticket = create_ticket(
+        db_session,
+        requester_id=customer.id,
+        title="Old title",
+        description="Keep me",
+    )
+    res = client.patch(
+        f"{TICKETS_URL}/{ticket.id}",
+        json={"title": "New title", "priority": "high"},
+        headers=auth_header(customer),
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["title"] == "New title"
+    assert body["priority"] == "high"
+    # Untouched field is preserved.
+    assert body["description"] == "Keep me"
+
+
+def test_update_rejects_requester_id_in_body(client, db_session):
+    """Ownership cannot be changed by the client (mass-assignment guard)."""
+    customer = create_user(db_session, email="upd-mass@test.com", role="customer")
+    ticket = create_ticket(db_session, requester_id=customer.id)
+    res = client.patch(
+        f"{TICKETS_URL}/{ticket.id}",
+        json={"title": "x", "requester_id": 999},
+        headers=auth_header(customer),
+    )
+    assert res.status_code == 422
+
+
+def test_update_rejects_status_in_body(client, db_session):
+    """Status moves only through the dedicated transition endpoint."""
+    customer = create_user(db_session, email="upd-status@test.com", role="customer")
+    ticket = create_ticket(db_session, requester_id=customer.id)
+    res = client.patch(
+        f"{TICKETS_URL}/{ticket.id}",
+        json={"status": "closed"},
+        headers=auth_header(customer),
+    )
+    assert res.status_code == 422
+
+
+def test_customer_cannot_update_another_users_ticket(client, db_session):
+    """IDOR guard: editing someone else's ticket returns 403, no data leak."""
+    owner = create_user(db_session, email="upd-owner2@test.com", role="customer")
+    other = create_user(db_session, email="upd-other@test.com", role="customer")
+    ticket = create_ticket(db_session, requester_id=owner.id, title="Private")
+    res = client.patch(
+        f"{TICKETS_URL}/{ticket.id}",
+        json={"title": "hijacked"},
+        headers=auth_header(other),
+    )
+    assert res.status_code == 403
+    assert "title" not in res.json()
+
+
+def test_admin_can_update_any_ticket(client, db_session):
+    admin = create_user(db_session, email="upd-admin@test.com", role="admin")
+    customer = create_user(db_session, email="upd-cust@test.com", role="customer")
+    ticket = create_ticket(db_session, requester_id=customer.id)
+    res = client.patch(
+        f"{TICKETS_URL}/{ticket.id}",
+        json={"priority": "urgent"},
+        headers=auth_header(admin),
+    )
+    assert res.status_code == 200
+    assert res.json()["priority"] == "urgent"
+
+
+def test_agent_can_update_only_assigned_ticket(client, db_session):
+    agent = create_user(db_session, email="upd-agent@test.com", role="agent")
+    customer = create_user(db_session, email="upd-cust2@test.com", role="customer")
+    assigned = create_ticket(db_session, requester_id=customer.id, assignee_id=agent.id)
+    unassigned = create_ticket(db_session, requester_id=customer.id)
+
+    ok = client.patch(
+        f"{TICKETS_URL}/{assigned.id}",
+        json={"title": "agent edit"},
+        headers=auth_header(agent),
+    )
+    assert ok.status_code == 200
+
+    denied = client.patch(
+        f"{TICKETS_URL}/{unassigned.id}",
+        json={"title": "nope"},
+        headers=auth_header(agent),
+    )
+    assert denied.status_code == 403
+
+
+def test_update_unknown_ticket_returns_404(client, db_session):
+    admin = create_user(db_session, email="upd-404@test.com", role="admin")
+    res = client.patch(
+        f"{TICKETS_URL}/99999",
+        json={"title": "x"},
+        headers=auth_header(admin),
+    )
+    assert res.status_code == 404
