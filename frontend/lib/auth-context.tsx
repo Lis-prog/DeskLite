@@ -50,6 +50,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Initial auth check: fetchMe sets state only after the async request resolves.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMe();
   }, [fetchMe]);
 

@@ -108,7 +108,10 @@ def seed() -> None:
             ),
             dict(
                 title="Add dark mode to the dashboard",
-                description="Feature request: a dark mode toggle would be great for late-night work.",
+                description=(
+                    "Feature request: a dark mode toggle would be great "
+                    "for late-night work."
+                ),
                 status="open", priority="low",
                 requester=carol, assignee=None, created_at=_ago(days=3),
             ),

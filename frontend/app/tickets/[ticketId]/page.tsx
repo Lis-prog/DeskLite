@@ -104,6 +104,8 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
   );
 
   useEffect(() => {
+    // Initial fetch: loadTicket sets state only after the async request resolves.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadTicket();
   }, [loadTicket]);
 

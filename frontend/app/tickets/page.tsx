@@ -72,6 +72,8 @@ export default function TicketsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   useEffect(() => {
+    // Client-only mount guard to avoid SSR hydration mismatches.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -81,6 +83,8 @@ export default function TicketsPage() {
     const key = `${STORAGE_KEY_PREFIX}${user.role}`;
     const saved = localStorage.getItem(key) as StatusFilter | null;
     const valid = saved && STATUS_TABS.some((t) => t.value === saved);
+    // Syncs filter from localStorage (external system) after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
     setStatusFilter(valid ? saved : defaultFilterFor(user.role));
   }, [mounted, user?.role]); // eslint-disable-line react-hooks/exhaustive-deps
 
