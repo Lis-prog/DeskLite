@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -22,6 +23,7 @@ type Ticket = {
 };
 
 export default function TicketsPage() {
+  const router = useRouter();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -55,9 +57,9 @@ export default function TicketsPage() {
           </p>
         </div>
 
-        <Link href="/tickets/new">
-          <Button type="button">New ticket</Button>
-        </Link>
+        <Button type="button" onClick={() => router.push("/tickets/new")}>
+          New ticket
+        </Button>
       </section>
 
       {isLoading && (

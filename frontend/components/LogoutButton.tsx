@@ -5,15 +5,20 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
 
-export function LogoutButton() {
+type LogoutButtonProps = {
+  onLoggedOut?: () => void;
+};
+
+export function LogoutButton({ onLoggedOut }: LogoutButtonProps) {
   const router = useRouter();
 
   async function handleLogout() {
     try {
-      await api("/auth/logout", {
+      await api<void>("/auth/logout", {
         method: "POST",
       });
 
+      onLoggedOut?.();
       router.push("/login");
       router.refresh();
     } catch (error) {

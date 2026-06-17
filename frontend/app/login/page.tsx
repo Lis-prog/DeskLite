@@ -24,6 +24,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       router.push("/tickets");
+      router.refresh();
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Could not connect to the server."
