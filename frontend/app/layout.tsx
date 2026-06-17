@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
-import { AuthNav } from "@/components/AuthNav";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context";
+import { Nav } from "@/components/Nav";
 
 export const metadata: Metadata = {
   title: "DeskLite",
@@ -17,18 +17,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <header className="border-b border-border bg-surface">
-          <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-            <Link href="/" className="text-lg font-semibold text-brand">
-              DeskLite
-            </Link>
-            <div className="flex items-center gap-4">
-              <span className="hidden text-sm text-muted sm:inline">Internal Support</span>
-              <AuthNav />
-            </div>
-          </div>
-        </header>
-        <main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
+        <AuthProvider>
+          <Nav />
+          <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+            {children}
+          </main>
+        </AuthProvider>
       </body>
     </html>
   );

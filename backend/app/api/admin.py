@@ -6,7 +6,9 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies import require_roles
 from app.db.session import get_db
+from app.models.ticket import Ticket
 from app.models.user import User
+from app.schemas.ticket import TicketAssignmentUpdate, TicketRead
 from app.schemas.user import RoleUpdate, UserRead
 
 # Every route in this router is admin-only. Declaring the guard at the router
@@ -45,3 +47,37 @@ def assign_role(
     db.commit()
     db.refresh(user)
     return user
+
+
+@router.patch("/tickets/{ticket_id}/assignee", response_model=TicketRead)
+def assign_ticket(
+    ticket_id: int,
+    payload: TicketAssignmentUpdate,
+    db: Session = Depends(get_db),
+) -> Ticket:
+    """Assign/reassign/unassign a ticket. Admin-only by router dependency."""
+    ticket = db.get(Ticket, ticket_id)
+    if ticket is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ticket not found.",
+        )
+
+    if payload.assignee_id is not None:
+        assignee = db.get(User, payload.assignee_id)
+        if assignee is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Assignee user not found.",
+            )
+        if assignee.role != "agent":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only users with agent role can be assigned.",
+            )
+
+    ticket.assignee_id = payload.assignee_id
+    db.add(ticket)
+    db.commit()
+    db.refresh(ticket)
+    return ticket

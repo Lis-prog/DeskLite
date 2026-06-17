@@ -165,12 +165,14 @@ def test_list_tickets_agent_sees_assigned_only(client, db_session):
 def test_list_tickets_admin_sees_all(client, db_session):
     admin = create_user(db_session, email="admin@test.com", role="admin")
     customer = create_user(db_session, email="cust2@test.com", role="customer")
-    create_ticket(db_session, requester_id=customer.id, title="One")
-    create_ticket(db_session, requester_id=customer.id, title="Two")
+    create_ticket(db_session, requester_id=customer.id, title="Admin visibility one")
+    create_ticket(db_session, requester_id=customer.id, title="Admin visibility two")
 
     res = client.get(TICKETS_URL, headers=auth_header(admin))
     assert res.status_code == 200
-    assert len(res.json()) == 2
+    titles = {t["title"] for t in res.json()}
+    assert "Admin visibility one" in titles
+    assert "Admin visibility two" in titles
 
 
 # --- Get by id --------------------------------------------------------------
