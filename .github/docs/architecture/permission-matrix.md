@@ -25,8 +25,16 @@ A user's role is **assigned by an admin**, never chosen at sign-up. Registration
 | `POST /api/v1/auth/refresh` | yes | yes | yes |
 | `GET /api/v1/auth/me` | yes | yes | yes |
 | `GET /api/v1/auth/admin/ping` | 403 | 403 | yes |
+| `POST /api/v1/tickets` | yes | yes | yes |
+| `GET /api/v1/tickets` | owner | owner | yes |
+| `GET /api/v1/tickets/{id}` | owner | owner | yes |
+| `PATCH /api/v1/tickets/{id}` | owner | owner | yes |
+| `DELETE /api/v1/tickets/{id}` | 403 | 403 | yes |
 
 "yes" = allowed when authenticated. "public" = no token required. "403" = forbidden.
+"owner" = allowed, but scoped to rows the caller owns — see **Object-level access** below
+(`customer` → `requester_id == user.id`, `agent` → `assignee_id == user.id`). For `POST /api/v1/tickets`,
+`requester_id` is always taken from the JWT, never the body.
 
 ## Object-level access (ownership, IDOR defense)
 
