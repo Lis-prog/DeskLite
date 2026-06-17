@@ -3,8 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { api } from "@/lib/api";
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -19,12 +18,8 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/v1/auth/register`, {
+      await api("/auth/register", {
         method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           full_name: fullName,
           email,
@@ -32,17 +27,16 @@ export default function RegisterPage() {
         }),
       });
 
-      if (!response.ok) {
-        setMessage("Registration failed. Please check your details.");
-        return;
-      }
-
       setMessage("Registration successful. You can now log in.");
       setFullName("");
       setEmail("");
       setPassword("");
-    } catch {
-      setMessage("Could not connect to the server.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not connect to the server."
+      );
     } finally {
       setIsSubmitting(false);
     }

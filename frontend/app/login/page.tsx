@@ -29,6 +29,7 @@ export default function LoginPage() {
       // and redirects see the authenticated user without a full page reload.
       await refreshUser();
       router.push("/tickets");
+      router.refresh();
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Could not connect to the server."
