@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import health, tickets
+from app.api import admin, auth, health, tickets
 from app.core.config import settings
 
 app = FastAPI(
@@ -21,6 +21,8 @@ app.add_middleware(
 
 # All v1 routers mount under /api/v1
 app.include_router(health.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(admin.router, prefix="/api/v1")
 app.include_router(tickets.router, prefix="/api/v1")
 
 

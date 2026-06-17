@@ -1,87 +1,78 @@
 from __future__ import annotations
 
 from collections.abc import Generator
-from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from jose import jwt
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.orm import Session
 
-import app.models  # noqa: F401  (register all models on Base.metadata)
-from app.core.config import settings
-from app.db.base import Base
-from app.db.session import get_db
+import tests.bootstrap_env  # noqa: F401  # must run before app imports
+from app.core.security import create_access_token, create_refresh_token, hash_password
+from app.db.session import engine, get_db
 from app.main import app
 from app.models.ticket import Ticket
 from app.models.user import User
 
-# In-memory SQLite shared across the connection pool for the whole test session.
-_engine = create_engine(
-    "sqlite://",
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-_TestSession = sessionmaker(bind=_engine, autoflush=False, autocommit=False)
-
 
 @pytest.fixture
-def db() -> Generator[Session, None, None]:
-    Base.metadata.create_all(bind=_engine)
-    session = _TestSession()
+def db_session() -> Generator[Session, None, None]:
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = Session(bind=connection)
     try:
         yield session
     finally:
         session.close()
-        Base.metadata.drop_all(bind=_engine)
+        transaction.rollback()
+        connection.close()
 
 
 @pytest.fixture
-def client(db: Session) -> Generator[TestClient, None, None]:
-    def _override_get_db() -> Generator[Session, None, None]:
-        yield db
+def client(db_session: Session) -> Generator[TestClient, None, None]:
+    def override_get_db() -> Generator[Session, None, None]:
+        yield db_session
 
-    app.dependency_overrides[get_db] = _override_get_db
-    try:
-        yield TestClient(app)
-    finally:
-        app.dependency_overrides.pop(get_db, None)
-
-
-def make_token(user_id: int, role: str = "customer", email: str = "u@test.com") -> str:
-    """Mint a valid access JWT for test use."""
-    expire = datetime.now(UTC) + timedelta(minutes=settings.access_token_minutes)
-    return jwt.encode(
-        {"sub": str(user_id), "role": role, "email": email, "exp": expire},
-        settings.jwt_secret,
-        algorithm=settings.jwt_algorithm,
-    )
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app, raise_server_exceptions=True) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
 
 
-def make_user(db: Session, *, role: str = "customer", email: str | None = None) -> User:
+def create_user(
+    db: Session,
+    *,
+    email: str,
+    password: str = "password123",
+    full_name: str = "Test User",
+    role: str = "customer",
+) -> User:
     user = User(
-        email=email or f"{role}-{datetime.now(UTC).timestamp()}@test.com",
-        password_hash="x",
-        full_name=f"Test {role}",
+        email=email,
+        password_hash=hash_password(password),
+        full_name=full_name,
         role=role,
     )
     db.add(user)
-    db.commit()
-    db.refresh(user)
+    db.flush()
     return user
 
 
-def make_ticket(
+def auth_header(user: User) -> dict[str, str]:
+    """Build a Cookie header carrying a valid access token for `user`,
+    so authenticated/role-gated endpoints can be exercised in tests."""
+    token = create_access_token(subject=user.id, role=user.role, email=user.email)
+    return {"Cookie": f"access_token={token}"}
+
+
+def create_ticket(
     db: Session,
     *,
     requester_id: int,
-    assignee_id: int | None = None,
-    title: str = "Original title",
-    description: str = "Original description",
+    title: str = "Test ticket",
+    description: str = "",
     priority: str = "medium",
     status: str = "open",
+    assignee_id: int | None = None,
 ) -> Ticket:
     ticket = Ticket(
         title=title,
@@ -92,6 +83,9 @@ def make_ticket(
         assignee_id=assignee_id,
     )
     db.add(ticket)
-    db.commit()
-    db.refresh(ticket)
+    db.flush()
     return ticket
+def refresh_header(user: User) -> dict[str, str]:
+    """Build a Cookie header carrying a valid refresh token for `user`."""
+    token = create_refresh_token(subject=user.id, role=user.role, email=user.email)
+    return {"Cookie": f"refresh_token={token}"}
