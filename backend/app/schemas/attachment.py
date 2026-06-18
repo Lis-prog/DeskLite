@@ -17,3 +17,10 @@ class AttachmentRead(BaseModel):
     content_type: str
     size: int
     created_at: datetime
+
+
+class AttachmentDownloadRead(BaseModel):
+    """A short-lived presigned download link. The bucket stays private."""
+
+    url: str
+    expires_in: int
