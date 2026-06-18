@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.dependencies import _UserStub, get_current_user
+from app.core.dependencies import _UserStub, get_current_user, require_roles
 from app.core.file_validation import (
     MAX_FILE_SIZE_BYTES,
     FileValidationError,
@@ -37,6 +37,28 @@ def list_tickets(
 ) -> list[Ticket]:
     """List tickets visible to the caller. Scope is enforced in SQL per role."""
     stmt = scoped_ticket_query(current_user)
+    return list(db.scalars(stmt))
+
+
+# NOTE: declared before `/{ticket_id}` so the literal "queue" segment is never
+# captured as a ticket id.
+@router.get("/queue", response_model=list[TicketRead])
+def list_agent_queue(
+    db: Session = Depends(get_db),
+    current_user: _UserStub = Depends(require_roles("agent")),
+) -> list[Ticket]:
+    """Return the calling agent's work queue: only tickets assigned to them.
+
+    Unlike `GET /tickets` (which scopes results per role), this always filters
+    strictly by `assignee_id == caller`, giving an agent a focused list of their
+    own tickets. Only agents can be assignees, so the endpoint is restricted to
+    the agent role; other roles receive 403.
+    """
+    stmt = (
+        select(Ticket)
+        .where(Ticket.assignee_id == current_user.id)
+        .order_by(Ticket.created_at.desc())
+    )
     return list(db.scalars(stmt))
 
 
