@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -54,8 +55,15 @@ function usePageMeta(role: string | undefined) {
 }
 
 export default function TicketsPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const { title, description } = usePageMeta(user?.role);
+
+  useEffect(() => {
+    if (user?.role === "agent") {
+      router.replace("/tickets/queue");
+    }
+  }, [user?.role, router]);
 
   // ── mount guard ──────────────────────────────────────────────────────────
   // Render a consistent skeleton during SSR; switch to real UI only after
