@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { CommentThread } from "@/components/CommentThread";
+import { TicketStatusControls } from "@/components/TicketStatusControls";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -125,12 +126,10 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
   }, [isAdmin]);
 
   useEffect(() => {
-    if (!ticket) return;
-    const currentTicket = ticket;
     async function loadSatisfaction() {
       try {
         const data = await api<SatisfactionRating | null>(
-          `/tickets/${currentTicket.id}/satisfaction`
+          `/tickets/${params.ticketId}/satisfaction`
         );
         if (data) {
           setSatisfaction(data);
@@ -141,7 +140,7 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
       }
     }
     loadSatisfaction();
-  }, [ticket?.id]);
+  }, [params.ticketId]);
 
   async function handleAssignmentSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -280,6 +279,17 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
           <p className="font-medium">{formatDate(ticket.resolved_at)}</p>
         </div>
       </section>
+
+      {user && (
+        <TicketStatusControls
+          ticketId={ticket.id}
+          status={ticket.status}
+          assigneeId={ticket.assignee_id}
+          userRole={user.role}
+          userId={user.id}
+          onUpdated={() => loadTicket(true)}
+        />
+      )}
 
       {isAdmin && (
         <section
