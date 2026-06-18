@@ -11,14 +11,19 @@ from app.core.file_validation import (
     validate_upload,
 )
 from app.core.permissions import ensure_ticket_access, scoped_ticket_query
-from app.core.storage import StorageService, build_storage_key, get_storage_service
+from app.core.storage import (
+    DOWNLOAD_URL_EXPIRY_SECONDS,
+    StorageService,
+    build_storage_key,
+    get_storage_service,
+)
 from app.core.ticket_state import InvalidTransitionError, validate_transition
 from app.db.session import get_db
 from app.models.attachment import Attachment
 from app.models.audit_log import AuditLog
 from app.models.comment import Comment
 from app.models.ticket import Ticket
-from app.schemas.attachment import AttachmentRead
+from app.schemas.attachment import AttachmentDownloadRead, AttachmentRead
 from app.schemas.comment import CommentCreate, CommentRead
 from app.schemas.ticket import (
     SatisfactionRatingRead,
@@ -236,6 +241,46 @@ async def upload_attachment(
     db.commit()
     db.refresh(attachment)
     return attachment
+
+
+@router.get(
+    "/{ticket_id}/attachments/{attachment_id}/download",
+    response_model=AttachmentDownloadRead,
+)
+def get_attachment_download_url(
+    ticket_id: int,
+    attachment_id: int,
+    db: Session = Depends(get_db),
+    current_user: _UserStub = Depends(get_current_user),
+    storage: StorageService = Depends(get_storage_service),
+) -> AttachmentDownloadRead:
+    """Return a short-lived signed URL to download an attachment.
+
+    RBAC and object-level authorization run first: only callers who may see the
+    parent ticket can get a link (AGENTS.md §5). The attachment must belong to
+    that ticket — a cross-ticket id returns 404, never another ticket's file.
+    The bucket stays private; access is granted only through the signed URL.
+    """
+    ticket = db.get(Ticket, ticket_id)
+    if ticket is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ticket not found.",
+        )
+    ensure_ticket_access(current_user, ticket)
+
+    attachment = db.get(Attachment, attachment_id)
+    if attachment is None or attachment.ticket_id != ticket_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Attachment not found.",
+        )
+
+    url = storage.generate_download_url(
+        key=attachment.storage_key,
+        filename=attachment.filename,
+    )
+    return AttachmentDownloadRead(url=url, expires_in=DOWNLOAD_URL_EXPIRY_SECONDS)
 
 
 # ── Status transition ─────────────────────────────────────────────────────────
