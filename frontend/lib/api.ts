@@ -17,12 +17,15 @@ function formatApiError(body: { detail?: string | { msg: string }[] }): string {
 }
 
 function request(path: string, init?: RequestInit): Promise<Response> {
+  const isFormData = typeof FormData !== "undefined" && init?.body instanceof FormData;
   return fetch(`${BASE}${API_PREFIX}${path}`, {
     credentials: "include", // send httpOnly auth cookie
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
+    headers: isFormData
+      ? { ...(init?.headers ?? {}) }
+      : {
+          "Content-Type": "application/json",
+          ...(init?.headers ?? {}),
+        },
     ...init,
   });
 }
