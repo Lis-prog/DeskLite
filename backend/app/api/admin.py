@@ -4,12 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import require_roles
+from app.core.dependencies import _UserStub, get_current_user, require_roles
 from app.db.session import get_db
 from app.models.ticket import Ticket
 from app.models.user import User
 from app.schemas.ticket import TicketAssignmentUpdate, TicketRead
 from app.schemas.user import RoleUpdate, UserRead
+from app.services.audit import record_assignment_change
 
 # Every route in this router is admin-only. Declaring the guard at the router
 # level means RBAC is enforced on each endpoint by construction — a new route
@@ -54,6 +55,7 @@ def assign_ticket(
     ticket_id: int,
     payload: TicketAssignmentUpdate,
     db: Session = Depends(get_db),
+    current_user: _UserStub = Depends(get_current_user),
 ) -> Ticket:
     """Assign/reassign/unassign a ticket. Admin-only by router dependency."""
     ticket = db.get(Ticket, ticket_id)
@@ -76,7 +78,15 @@ def assign_ticket(
                 detail="Only users with agent role can be assigned.",
             )
 
+    from_assignee_id = ticket.assignee_id
     ticket.assignee_id = payload.assignee_id
+    record_assignment_change(
+        db,
+        actor_id=current_user.id,
+        ticket_id=ticket.id,
+        from_assignee_id=from_assignee_id,
+        to_assignee_id=payload.assignee_id,
+    )
     db.add(ticket)
     db.commit()
     db.refresh(ticket)

@@ -11,6 +11,7 @@ from app.core.file_validation import (
     validate_upload,
 )
 from app.core.permissions import ensure_ticket_access, scoped_ticket_query
+from app.core.resolution_tracking import apply_resolved_at
 from app.core.storage import (
     DOWNLOAD_URL_EXPIRY_SECONDS,
     StorageService,
@@ -33,6 +34,7 @@ from app.schemas.ticket import (
     TicketStatusUpdate,
     TicketUpdate,
 )
+from app.services.audit import record_status_change
 from app.services.ticket_status import can_advance_status
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
@@ -350,7 +352,16 @@ def transition_ticket_status(
             detail=str(exc),
         ) from exc
 
+    from_status = ticket.status
     ticket.status = payload.status
+    apply_resolved_at(ticket, payload.status)
+    record_status_change(
+        db,
+        actor_id=current_user.id,
+        ticket_id=ticket.id,
+        from_status=from_status,
+        to_status=payload.status,
+    )
     db.commit()
     db.refresh(ticket)
     return ticket
