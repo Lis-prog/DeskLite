@@ -11,8 +11,8 @@ from app.core.file_validation import (
     validate_upload,
 )
 from app.core.permissions import ensure_ticket_access, scoped_ticket_query
-from app.core.ticket_state import InvalidTransitionError, validate_transition
 from app.core.storage import StorageService, build_storage_key, get_storage_service
+from app.core.ticket_state import InvalidTransitionError, validate_transition
 from app.db.session import get_db
 from app.models.attachment import Attachment
 from app.models.audit_log import AuditLog
