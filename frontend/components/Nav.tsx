@@ -14,10 +14,7 @@ function navLinksFor(role: UserRole): NavLink[] {
         { href: "/tickets/new", label: "New Ticket" },
       ];
     case "agent":
-      return [
-        { href: "/tickets", label: "My Queue" },
-        { href: "/tickets/new", label: "New Ticket" },
-      ];
+      return [{ href: "/tickets/queue", label: "My Queue" }];
     case "admin":
       return [
         { href: "/tickets", label: "All Tickets" },

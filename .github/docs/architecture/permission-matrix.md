@@ -35,6 +35,7 @@ A user's role is **assigned by an admin**, never chosen at sign-up. Registration
 | `PATCH /api/v1/tickets/{id}` | yes* | yes* | yes* |
 | `GET /api/v1/tickets/{id}/comments` | yes* | yes* | yes* |
 | `POST /api/v1/tickets/{id}/comments` | yes* | yes* | yes* |
+| `POST /api/v1/tickets/{id}/attachments` | yes* | yes* | yes* |
 | `GET /api/v1/tickets/{id}/satisfaction` | yes* | yes* | yes* |
 | `POST /api/v1/tickets/{id}/satisfaction` | yes** | 403 | 403 |
 | `PATCH /api/v1/admin/tickets/{id}/assignee` | 403 | 403 | yes |
@@ -65,6 +66,7 @@ ownership. Implemented in `can_access_ticket()` / `ensure_ticket_access()`.
 |---|---|---|---|
 | Ticket | only where `requester_id == user.id` | only where `assignee_id == user.id` | all tickets |
 | Comment (on ticket) | same as parent ticket | same as parent ticket | same as parent ticket |
+| Attachment (on ticket) | same as parent ticket | same as parent ticket | same as parent ticket |
 | Satisfaction rating | submit only as requester on **closed** ticket; read if ticket visible | read if ticket visible | read if ticket visible |
 
 A request for a row the caller may not see returns **403** (or 404), never the data.
