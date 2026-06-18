@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/Spinner";
@@ -56,23 +56,22 @@ export function AttachmentPanel({ ticketId }: AttachmentPanelProps) {
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [downloadError, setDownloadError] = useState("");
 
-  const loadAttachments = useCallback(async () => {
-    setLoadError("");
-    try {
-      const data = await api<Attachment[]>(`/tickets/${ticketId}/attachments`);
-      setAttachments(data);
-    } catch (err) {
-      setLoadError(
-        err instanceof Error ? err.message : "Could not load attachments."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [ticketId]);
-
   useEffect(() => {
-    loadAttachments();
-  }, [loadAttachments]);
+    async function load() {
+      setLoadError("");
+      try {
+        const data = await api<Attachment[]>(`/tickets/${ticketId}/attachments`);
+        setAttachments(data);
+      } catch (err) {
+        setLoadError(
+          err instanceof Error ? err.message : "Could not load attachments."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    load();
+  }, [ticketId]);
 
   async function handleUpload(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
