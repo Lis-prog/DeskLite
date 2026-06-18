@@ -31,12 +31,15 @@ A user's role is **assigned by an admin**, never chosen at sign-up. Registration
 | `PATCH /api/v1/admin/users/{id}/role` | 403 | 403 | yes |
 | `POST /api/v1/tickets` | yes | yes | yes |
 | `GET /api/v1/tickets` | yes | yes | yes |
+| `GET /api/v1/tickets/queue` | 403 | yes | 403 |
 | `GET /api/v1/tickets/{id}` | yes | yes | yes |
 | `PATCH /api/v1/tickets/{id}` | yes* | yes* | yes* |
 | `PATCH /api/v1/tickets/{id}/status` | 403 | yes*** | yes |
 | `GET /api/v1/tickets/{id}/comments` | yes* | yes* | yes* |
 | `POST /api/v1/tickets/{id}/comments` | yes* | yes* | yes* |
+| `GET /api/v1/tickets/{id}/attachments` | yes* | yes* | yes* |
 | `POST /api/v1/tickets/{id}/attachments` | yes* | yes* | yes* |
+| `GET /api/v1/tickets/{id}/attachments/{attachment_id}/download` | yes* | yes* | yes* |
 | `GET /api/v1/tickets/{id}/satisfaction` | yes* | yes* | yes* |
 | `POST /api/v1/tickets/{id}/satisfaction` | yes** | 403 | 403 |
 | `PATCH /api/v1/admin/tickets/{id}/assignee` | 403 | 403 | yes |
@@ -74,7 +77,7 @@ ownership. Implemented in `can_access_ticket()` / `ensure_ticket_access()`.
 
 A request for a row the caller may not see returns **403** (or 404), never the data.
 
-## Golden rules these checks enforce (see `AGENTS.md` §5)
+## Golden rules these checks enforce
 
 1. Identity (`user.id`, `role`) comes from the validated JWT, never the request body.
 2. Role is whitelisted out of `UserCreate` — a client cannot self-assign `agent`/`admin`.

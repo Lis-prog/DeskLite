@@ -6,6 +6,7 @@ Run once inside the backend container:
 
 Credentials are printed at the end.
 Safe to re-run: existing emails / ticket titles are skipped.
+Resolved/closed tickets missing ``resolved_at`` are backfilled on each run.
 """
 from __future__ import annotations
 
@@ -53,6 +54,13 @@ SEED_USERS = [
 
 def _ago(days: int = 0, hours: int = 0) -> datetime:
     return datetime.now(UTC) - timedelta(days=days, hours=hours)
+
+
+def _resolved_at_for_seed(status: str, created_at: datetime) -> datetime | None:
+    """Demo tickets past in_progress should carry a plausible resolution time."""
+    if status in ("resolved", "closed"):
+        return created_at + timedelta(days=1)
+    return None
 
 
 def seed() -> None:
@@ -200,6 +208,7 @@ def seed() -> None:
                 skipped_tickets += 1
                 continue
 
+            created_at = t["created_at"]
             ticket = Ticket(
                 title=t["title"],
                 description=t["description"],
@@ -207,10 +216,23 @@ def seed() -> None:
                 priority=t["priority"],
                 requester_id=t["requester"].id,
                 assignee_id=t["assignee"].id if t["assignee"] else None,
-                created_at=t["created_at"],
+                created_at=created_at,
+                resolved_at=_resolved_at_for_seed(t["status"], created_at),
             )
             db.add(ticket)
             created_tickets += 1
+
+        backfilled = 0
+        for ticket in db.scalars(
+            select(Ticket).where(
+                Ticket.status.in_(("resolved", "closed")),
+                Ticket.resolved_at.is_(None),
+            )
+        ):
+            ticket.resolved_at = ticket.updated_at or (
+                ticket.created_at + timedelta(days=1)
+            )
+            backfilled += 1
 
         db.commit()
 
@@ -224,7 +246,10 @@ def seed() -> None:
         if skipped_users:
             print(f"\nUsers skipped (already exist): {', '.join(skipped_users)}")
 
-        print(f"\nTickets created: {created_tickets}  |  skipped: {skipped_tickets}")
+        print(
+            f"\nTickets created: {created_tickets}  |  skipped: {skipped_tickets}"
+            f"  |  resolved_at backfilled: {backfilled}"
+        )
         print("───────────────────────────────────────────────────────────\n")
 
     finally:

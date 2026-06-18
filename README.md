@@ -5,7 +5,7 @@ lifecycle, and managers track everything on a live dashboard — with strict rol
 
 **Stack:** Next.js + React + TypeScript + Tailwind · FastAPI + Python 3.12 · PostgreSQL · MinIO (S3) · Docker · GitHub Actions
 
-> New to the project? Read **`AGENTS.md`** (how we build) and **`CONTRIBUTING.md`** (how we collaborate).
+> New to the project? Read **`.github/docs/architecture/permission-matrix.md`** (roles & security rules) and **`CONTRIBUTING.md`** (how we collaborate).
 
 ## Run it locally (one command)
 
@@ -31,8 +31,7 @@ To stop: `docker compose down` (add `-v` to also wipe the database).
 ```
 backend/    FastAPI app (API, models, schemas, migrations, tests)
 frontend/   Next.js app (pages, components, design system)
-.github/    CI pipeline and PR template
-.cursor/    shared rules your Cursor agent auto-follows
+.github/    CI pipeline, PR template, and architecture docs
 ```
 
 ## Common commands
