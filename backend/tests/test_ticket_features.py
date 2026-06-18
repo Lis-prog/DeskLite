@@ -43,6 +43,17 @@ def test_comment_body_is_sanitized(client, db_session):
     assert res.json()["body"] == "Hello"
 
 
+def test_comment_rejects_markup_only_body(client, db_session):
+    customer = create_user(db_session, email="cmt-empty@test.com", role="customer")
+    ticket = create_ticket(db_session, requester_id=customer.id)
+    res = client.post(
+        f"{TICKETS_URL}/{ticket.id}/comments",
+        json={"body": "<script>alert(1)</script>"},
+        headers=auth_header(customer),
+    )
+    assert res.status_code == 422
+
+
 def test_cannot_comment_on_inaccessible_ticket(client, db_session):
     owner = create_user(db_session, email="cmt-owner@test.com", role="customer")
     other = create_user(db_session, email="cmt-other@test.com", role="customer")

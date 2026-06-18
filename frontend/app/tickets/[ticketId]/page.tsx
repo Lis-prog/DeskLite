@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
+import { AttachmentPanel } from "@/components/AttachmentPanel";
 import { CommentThread } from "@/components/CommentThread";
 import { TicketStatusControls } from "@/components/TicketStatusControls";
 import { Button } from "@/components/ui/Button";
@@ -386,6 +387,8 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
           {ratingSuccess && <p className="text-sm text-status-resolved">{ratingSuccess}</p>}
         </section>
       )}
+
+      <AttachmentPanel ticketId={ticket.id} />
 
       <CommentThread ticketId={ticket.id} />
     </div>
