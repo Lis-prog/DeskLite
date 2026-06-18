@@ -126,12 +126,10 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
   }, [isAdmin]);
 
   useEffect(() => {
-    if (!ticket) return;
-    const currentTicket = ticket;
     async function loadSatisfaction() {
       try {
         const data = await api<SatisfactionRating | null>(
-          `/tickets/${currentTicket.id}/satisfaction`
+          `/tickets/${params.ticketId}/satisfaction`
         );
         if (data) {
           setSatisfaction(data);
@@ -142,7 +140,7 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
       }
     }
     loadSatisfaction();
-  }, [ticket?.id]);
+  }, [params.ticketId]);
 
   async function handleAssignmentSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
