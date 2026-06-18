@@ -254,7 +254,7 @@ def list_attachments(
     """List attachment metadata for a ticket, oldest first.
 
     Enforces the same access rules as the ticket itself — callers who cannot see
-    the ticket cannot see its attachments (AGENTS.md §5). Only metadata is
+    the ticket cannot see its attachments (permission-matrix). Only metadata is
     returned; the binary content stays in object storage and `storage_key` is
     never exposed.
     """
@@ -289,7 +289,7 @@ def get_attachment_download_url(
     """Return a short-lived signed URL to download an attachment.
 
     RBAC and object-level authorization run first: only callers who may see the
-    parent ticket can get a link (AGENTS.md §5). The attachment must belong to
+    parent ticket can get a link (permission-matrix). The attachment must belong to
     that ticket — a cross-ticket id returns 404, never another ticket's file.
     The bucket stays private; access is granted only through the signed URL.
     """
@@ -353,8 +353,8 @@ def transition_ticket_status(
         ) from exc
 
     from_status = ticket.status
+    apply_resolved_at(ticket, payload.status, from_status=from_status)
     ticket.status = payload.status
-    apply_resolved_at(ticket, payload.status)
     record_status_change(
         db,
         actor_id=current_user.id,
@@ -380,7 +380,7 @@ def update_ticket(
     """Update whitelisted fields (title/description/priority) on a ticket.
 
     Identity comes from the JWT, never the body. Returns 404 when the ticket
-    doesn't exist and 403 when the caller may not access it (AGENTS.md §5).
+    doesn't exist and 403 when the caller may not access it (permission-matrix).
     `status` is changed only via the dedicated transition endpoint, and
     `requester_id`/`assignee_id` are not accepted here (mass-assignment guard).
     """

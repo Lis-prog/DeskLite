@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import select
 
 from app.core.resolution_tracking import apply_resolved_at, resolution_duration
-from app.core.ticket_state import IN_PROGRESS, RESOLVED
+from app.core.ticket_state import CLOSED, IN_PROGRESS, RESOLVED
 from app.models.audit_log import AuditLog
 from app.models.ticket import Ticket
 from app.services.audit import ASSIGNMENT_CHANGE, STATUS_CHANGE
@@ -70,6 +70,23 @@ def test_apply_resolved_at_ignores_non_resolved_status():
     )
     apply_resolved_at(ticket, IN_PROGRESS, now=FIXED_NOW)
     assert ticket.resolved_at is None
+
+
+def test_apply_resolved_at_backfills_on_close_from_resolved():
+    ticket = Ticket(
+        title="t",
+        description="",
+        status=RESOLVED,
+        requester_id=1,
+        created_at=FIXED_NOW - timedelta(days=2),
+    )
+    apply_resolved_at(
+        ticket,
+        CLOSED,
+        from_status=RESOLVED,
+        now=FIXED_NOW,
+    )
+    assert ticket.resolved_at == FIXED_NOW
 
 
 def test_resolution_duration_returns_elapsed_time():

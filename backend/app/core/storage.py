@@ -9,7 +9,7 @@ from botocore.config import Config
 from app.core.config import settings
 
 # Downloads are served via short-lived presigned URLs so the bucket can stay
-# private (AGENTS.md §5, rule #9). Five minutes is enough to start a download
+# private (permission-matrix). Five minutes is enough to start a download
 # without leaving a long-lived link in browser history or logs.
 DOWNLOAD_URL_EXPIRY_SECONDS = 300
 

@@ -1,7 +1,7 @@
 # Contributing to DeskLite
 
 This is our shared workflow. It keeps five people building in parallel without conflicts.
-For *what* to build and the design/security rules, read **`AGENTS.md`** first.
+For design and security rules, read **`.github/docs/architecture/permission-matrix.md`** first.
 
 ## 1. One-time setup
 1. Install Docker Desktop (see `DeskLite_Team_Setup_Guide.docx`), Git, and VS Code.

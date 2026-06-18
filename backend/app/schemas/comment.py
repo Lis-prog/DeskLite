@@ -10,7 +10,7 @@ from app.core.sanitize import sanitize_user_text
 class CommentCreate(BaseModel):
     """Fields a client may set when posting a comment.
 
-    `author_id` comes from the JWT — never from the body (AGENTS.md §5 rule #1).
+    `author_id` comes from the JWT — never from the body (permission-matrix, golden rule #1).
     Comment text is stripped of HTML markup to prevent stored XSS (§5 rule #7).
     """
 

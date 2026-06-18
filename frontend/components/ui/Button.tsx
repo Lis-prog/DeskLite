@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes } from "react";
 
-// Shared button — use this instead of one-off styles (see AGENTS.md section 9).
+// Shared button — use this instead of one-off styles (see CONTRIBUTING.md).
 export function Button({
   className = "",
   ...props
