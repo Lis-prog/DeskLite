@@ -12,6 +12,7 @@ from app.core.file_validation import (
 )
 from app.core.permissions import ensure_ticket_access, scoped_ticket_query
 from app.core.storage import StorageService, build_storage_key, get_storage_service
+from app.core.ticket_state import InvalidTransitionError, validate_transition
 from app.db.session import get_db
 from app.models.attachment import Attachment
 from app.models.audit_log import AuditLog
@@ -24,8 +25,10 @@ from app.schemas.ticket import (
     SatisfactionRatingSubmit,
     TicketCreate,
     TicketRead,
+    TicketStatusUpdate,
     TicketUpdate,
 )
+from app.services.ticket_status import can_advance_status
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -233,6 +236,49 @@ async def upload_attachment(
     db.commit()
     db.refresh(attachment)
     return attachment
+
+
+# ── Status transition ─────────────────────────────────────────────────────────
+
+
+@router.patch("/{ticket_id}/status", response_model=TicketRead)
+def transition_ticket_status(
+    ticket_id: int,
+    payload: TicketStatusUpdate,
+    db: Session = Depends(get_db),
+    current_user: _UserStub = Depends(get_current_user),
+) -> Ticket:
+    """Change ticket status when the move is allowed by the lifecycle graph.
+
+    Only the assigned agent or an admin may change status. Illegal moves return
+    400 via :func:`app.core.ticket_state.validate_transition`.
+    """
+    ticket = db.get(Ticket, ticket_id)
+    if ticket is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ticket not found.",
+        )
+    ensure_ticket_access(current_user, ticket)
+
+    if not can_advance_status(current_user, ticket):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the assigned agent or an admin can change ticket status.",
+        )
+
+    try:
+        validate_transition(ticket.status, payload.status)
+    except InvalidTransitionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    ticket.status = payload.status
+    db.commit()
+    db.refresh(ticket)
+    return ticket
 
 
 # ── Update ─────────────────────────────────────────────────────────────────────

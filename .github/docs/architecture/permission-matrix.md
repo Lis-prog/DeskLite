@@ -33,6 +33,7 @@ A user's role is **assigned by an admin**, never chosen at sign-up. Registration
 | `GET /api/v1/tickets` | yes | yes | yes |
 | `GET /api/v1/tickets/{id}` | yes | yes | yes |
 | `PATCH /api/v1/tickets/{id}` | yes* | yes* | yes* |
+| `PATCH /api/v1/tickets/{id}/status` | 403 | yes*** | yes |
 | `GET /api/v1/tickets/{id}/comments` | yes* | yes* | yes* |
 | `POST /api/v1/tickets/{id}/comments` | yes* | yes* | yes* |
 | `POST /api/v1/tickets/{id}/attachments` | yes* | yes* | yes* |
@@ -45,6 +46,8 @@ A user's role is **assigned by an admin**, never chosen at sign-up. Registration
 
 \** Only the ticket **requester** may submit satisfaction feedback, and only when
 the ticket status is **closed**.
+
+\*** Only the **assigned agent** may change status; unassigned agents receive **403**.
 
 List and by-ID ticket routes are open to every authenticated role; **which rows**
 are returned is enforced by object-level scope (see table below): customer → own
