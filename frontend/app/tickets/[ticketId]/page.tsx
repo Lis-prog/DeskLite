@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { CommentThread } from "@/components/CommentThread";
+import { TicketStatusControls } from "@/components/TicketStatusControls";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -280,6 +281,17 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
           <p className="font-medium">{formatDate(ticket.resolved_at)}</p>
         </div>
       </section>
+
+      {user && (
+        <TicketStatusControls
+          ticketId={ticket.id}
+          status={ticket.status}
+          assigneeId={ticket.assignee_id}
+          userRole={user.role}
+          userId={user.id}
+          onUpdated={() => loadTicket(true)}
+        />
+      )}
 
       {isAdmin && (
         <section
