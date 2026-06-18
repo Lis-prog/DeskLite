@@ -243,6 +243,36 @@ async def upload_attachment(
     return attachment
 
 
+@router.get("/{ticket_id}/attachments", response_model=list[AttachmentRead])
+def list_attachments(
+    ticket_id: int,
+    db: Session = Depends(get_db),
+    current_user: _UserStub = Depends(get_current_user),
+) -> list[Attachment]:
+    """List attachment metadata for a ticket, oldest first.
+
+    Enforces the same access rules as the ticket itself — callers who cannot see
+    the ticket cannot see its attachments (AGENTS.md §5). Only metadata is
+    returned; the binary content stays in object storage and `storage_key` is
+    never exposed.
+    """
+    ticket = db.get(Ticket, ticket_id)
+    if ticket is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ticket not found.",
+        )
+    ensure_ticket_access(current_user, ticket)
+
+    return list(
+        db.scalars(
+            select(Attachment)
+            .where(Attachment.ticket_id == ticket_id)
+            .order_by(Attachment.created_at, Attachment.id)
+        )
+    )
+
+
 @router.get(
     "/{ticket_id}/attachments/{attachment_id}/download",
     response_model=AttachmentDownloadRead,
