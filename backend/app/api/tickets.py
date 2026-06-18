@@ -1,15 +1,23 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.dependencies import _UserStub, get_current_user, require_roles
+from app.core.file_validation import (
+    MAX_FILE_SIZE_BYTES,
+    FileValidationError,
+    validate_upload,
+)
 from app.core.permissions import ensure_ticket_access, scoped_ticket_query
+from app.core.storage import StorageService, build_storage_key, get_storage_service
 from app.db.session import get_db
+from app.models.attachment import Attachment
 from app.models.audit_log import AuditLog
 from app.models.comment import Comment
 from app.models.ticket import Ticket
+from app.schemas.attachment import AttachmentRead
 from app.schemas.comment import CommentCreate, CommentRead
 from app.schemas.ticket import (
     SatisfactionRatingRead,
@@ -155,6 +163,76 @@ def add_comment(
         .where(Comment.id == comment.id)
         .options(joinedload(Comment.author))
     )
+
+
+# ── Attachments ───────────────────────────────────────────────────────────────
+
+
+async def _read_upload_with_limit(file: UploadFile) -> tuple[bytes, str, str]:
+    """Read multipart body up to MAX_FILE_SIZE_BYTES + 1 to detect oversize uploads."""
+    filename = file.filename or ""
+    content_type = file.content_type or "application/octet-stream"
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await file.read(64 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > MAX_FILE_SIZE_BYTES:
+            raise FileValidationError(
+                f"File exceeds maximum size of {MAX_FILE_SIZE_BYTES // (1024 * 1024)} MB."
+            )
+        chunks.append(chunk)
+    body = b"".join(chunks)
+    validate_upload(filename, content_type, len(body))
+    return body, filename, content_type
+
+
+@router.post(
+    "/{ticket_id}/attachments",
+    response_model=AttachmentRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_attachment(
+    ticket_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: _UserStub = Depends(get_current_user),
+    storage: StorageService = Depends(get_storage_service),
+) -> Attachment:
+    """Upload a file to object storage and persist metadata on the ticket."""
+    ticket = db.get(Ticket, ticket_id)
+    if ticket is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ticket not found.",
+        )
+    ensure_ticket_access(current_user, ticket)
+
+    try:
+        body, filename, content_type = await _read_upload_with_limit(file)
+    except FileValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    storage_key = build_storage_key(ticket_id, filename)
+    storage.upload(key=storage_key, body=body, content_type=content_type)
+
+    attachment = Attachment(
+        ticket_id=ticket_id,
+        uploader_id=current_user.id,
+        filename=filename,
+        content_type=content_type.split(";", 1)[0].strip().lower(),
+        size=len(body),
+        storage_key=storage_key,
+    )
+    db.add(attachment)
+    db.commit()
+    db.refresh(attachment)
+    return attachment
 
 
 # ── Update ─────────────────────────────────────────────────────────────────────
