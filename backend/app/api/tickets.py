@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
@@ -30,11 +30,18 @@ from app.schemas.ticket import (
     SatisfactionRatingRead,
     SatisfactionRatingSubmit,
     TicketCreate,
+    TicketPriority,
     TicketRead,
+    TicketStatus,
     TicketStatusUpdate,
     TicketUpdate,
 )
 from app.services.audit import record_status_change
+from app.services.ticket_query import (
+    TicketListScope,
+    apply_ticket_list_filters,
+    validate_list_filters,
+)
 from app.services.ticket_status import can_advance_status
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
@@ -44,9 +51,33 @@ router = APIRouter(prefix="/tickets", tags=["tickets"])
 def list_tickets(
     db: Session = Depends(get_db),
     current_user: _UserStub = Depends(get_current_user),
+    status: TicketStatus | None = Query(default=None),
+    priority: TicketPriority | None = Query(default=None),
+    assignee_id: int | None = Query(default=None, ge=1),
+    unassigned: bool = Query(default=False),
+    scope: TicketListScope | None = Query(default=None),
+    q: str | None = Query(default=None, min_length=1, max_length=100),
 ) -> list[Ticket]:
-    """List tickets visible to the caller. Scope is enforced in SQL per role."""
+    """List tickets visible to the caller. Scope is enforced in SQL per role.
+
+    Optional filters combine with AND semantics and never widen RBAC scope.
+    """
+    validate_list_filters(
+        current_user,
+        assignee_id=assignee_id,
+        unassigned=unassigned,
+    )
     stmt = scoped_ticket_query(current_user)
+    stmt = apply_ticket_list_filters(
+        stmt,
+        current_user,
+        status=status,
+        priority=priority,
+        assignee_id=assignee_id,
+        unassigned=unassigned,
+        scope=scope,
+        q=q,
+    )
     return list(db.scalars(stmt))
 
 
