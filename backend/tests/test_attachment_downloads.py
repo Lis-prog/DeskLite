@@ -231,15 +231,17 @@ def test_generate_download_url_uses_presign_client():
 
 
 def test_generate_download_url_uses_presigned_get_with_expiry():
-    fake_client = MagicMock()
-    fake_client.generate_presigned_url.return_value = SIGNED_URL
-    service = StorageService(client=fake_client)
+    upload_client = MagicMock()
+    presign_client = MagicMock()
+    presign_client.generate_presigned_url.return_value = SIGNED_URL
+    service = StorageService(client=upload_client, presign_client=presign_client)
 
     url = service.generate_download_url(key="tickets/1/x/note.txt", filename="note.txt")
 
     assert url == SIGNED_URL
-    fake_client.generate_presigned_url.assert_called_once()
-    args, kwargs = fake_client.generate_presigned_url.call_args
+    presign_client.generate_presigned_url.assert_called_once()
+    upload_client.generate_presigned_url.assert_not_called()
+    args, kwargs = presign_client.generate_presigned_url.call_args
     assert args[0] == "get_object"
     assert kwargs["ExpiresIn"] == DOWNLOAD_URL_EXPIRY_SECONDS
     assert kwargs["Params"]["Key"] == "tickets/1/x/note.txt"
