@@ -217,6 +217,19 @@ def test_cannot_download_attachment_from_another_ticket(client, db_session, mock
 # --- Storage service unit test ----------------------------------------------
 
 
+def test_generate_download_url_uses_presign_client():
+    upload_client = MagicMock()
+    presign_client = MagicMock()
+    presign_client.generate_presigned_url.return_value = SIGNED_URL
+    service = StorageService(client=upload_client, presign_client=presign_client)
+
+    url = service.generate_download_url(key="tickets/1/x/note.txt", filename="note.txt")
+
+    assert url == SIGNED_URL
+    presign_client.generate_presigned_url.assert_called_once()
+    upload_client.generate_presigned_url.assert_not_called()
+
+
 def test_generate_download_url_uses_presigned_get_with_expiry():
     fake_client = MagicMock()
     fake_client.generate_presigned_url.return_value = SIGNED_URL

@@ -24,12 +24,24 @@ class Settings(BaseSettings):
 
     # Object storage (MinIO / S3)
     s3_endpoint: str = "http://minio:9000"
+    # Browser-facing MinIO URL for presigned downloads (e.g. https://files.example.com).
+    # Leave empty in dev to use s3_endpoint; must be set in production behind a reverse proxy.
+    s3_public_endpoint: str = ""
     s3_bucket: str = "desklite-attachments"
     minio_root_user: str = "minioadmin"
     minio_root_password: str = "minioadmin_change_me"
 
     # CORS
     frontend_origin: str = "http://localhost:3000"
+
+    # production disables Swagger UI on the public API
+    app_env: str = "development"
+
+
+    @property
+    def s3_presign_endpoint(self) -> str:
+        """Endpoint embedded in presigned URLs (must match what the browser can reach)."""
+        return self.s3_public_endpoint.strip() or self.s3_endpoint
 
 
 settings = Settings()

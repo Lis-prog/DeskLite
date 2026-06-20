@@ -4,11 +4,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import admin, auth, health, tickets
 from app.core.config import settings
 
+_is_production = settings.app_env.lower() == "production"
+
 app = FastAPI(
     title="DeskLite API",
     version="0.1.0",
-    docs_url="/docs",
-    openapi_url="/openapi.json",
+    docs_url=None if _is_production else "/docs",
+    openapi_url=None if _is_production else "/openapi.json",
 )
 
 app.add_middleware(

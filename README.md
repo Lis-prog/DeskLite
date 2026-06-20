@@ -5,7 +5,8 @@ lifecycle, and managers track everything on a live dashboard — with strict rol
 
 **Stack:** Next.js + React + TypeScript + Tailwind · FastAPI + Python 3.12 · PostgreSQL · MinIO (S3) · Docker · GitHub Actions
 
-> New to the project? Read **`.github/docs/architecture/permission-matrix.md`** (roles & security rules) and **`CONTRIBUTING.md`** (how we collaborate).
+> New to the project? Read **`.github/docs/architecture/permission-matrix.md`** (roles & security rules) and **`CONTRIBUTING.md`** (how we collaborate).  
+> **Production deploy:** see **`DEPLOY.md`** (Contabo VPS + HTTPS).
 
 ## Run it locally (one command)
 
