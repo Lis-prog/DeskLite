@@ -77,6 +77,21 @@ ownership. Implemented in `can_access_ticket()` / `ensure_ticket_access()`.
 
 A request for a row the caller may not see returns **403** (or 404), never the data.
 
+## List filters (`GET /api/v1/tickets`)
+
+Optional query parameters combine with **AND** semantics on top of the role scope above.
+Filters never widen visibility beyond `scoped_ticket_query()`.
+
+| Parameter | Allowed roles | Behavior |
+|---|---|---|
+| `status` | all authenticated | Exact match on ticket status |
+| `priority` | all authenticated | Exact match on ticket priority |
+| `assignee_id` | **admin only** | Exact match on assignee; **403** for others |
+| `unassigned=true` | **admin only** | Tickets with no assignee; **403** for others |
+| `scope=mine` | admin (meaningful) | Tickets where caller is requester or assignee |
+| `scope=all` | all (default for admin) | No extra narrowing beyond RBAC |
+| `q` | all authenticated | Case-insensitive search on title and description (parameterized) |
+
 ## Golden rules these checks enforce
 
 1. Identity (`user.id`, `role`) comes from the validated JWT, never the request body.
