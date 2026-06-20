@@ -1,0 +1,19 @@
+# DeskLite — Caddy reverse proxy (install on the VPS host, not in Docker).
+# Copy to /etc/caddy/Caddyfile and replace YOUR domains + reload Caddy.
+#
+#   sudo cp deploy/Caddyfile.example /etc/caddy/Caddyfile
+#   sudo systemctl reload caddy
+#
+# DNS A records for app / api / files must point to your VPS IP first.
+
+app.yourdomain.com {
+	reverse_proxy 127.0.0.1:3000
+}
+
+api.yourdomain.com {
+	reverse_proxy 127.0.0.1:8000
+}
+
+files.yourdomain.com {
+	reverse_proxy 127.0.0.1:9000
+}

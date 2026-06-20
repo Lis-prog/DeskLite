@@ -1,0 +1,25 @@
+# IP-only testing (no custom domain yet) — uses sslip.io free DNS.
+# Replace 148-xxx-xxx-xxx with your VPS IP dots as dashes.
+# Example IP 148.251.10.20 → 148-251-10-20.sslip.io
+#
+# Use HTTP only for quick smoke test (set COOKIE_SECURE=false in .env temporarily).
+# For real demo / examiner use a proper domain + HTTPS.
+
+http://148-xxx-xxx-xxx.sslip.io {
+	reverse_proxy 127.0.0.1:3000
+}
+
+http://api.148-xxx-xxx-xxx.sslip.io {
+	reverse_proxy 127.0.0.1:8000
+}
+
+http://files.148-xxx-xxx-xxx.sslip.io {
+	reverse_proxy 127.0.0.1:9000
+}
+
+# Matching .env (HTTP smoke test only):
+# FRONTEND_ORIGIN=http://148-xxx-xxx-xxx.sslip.io
+# NEXT_PUBLIC_API_URL=http://api.148-xxx-xxx-xxx.sslip.io
+# S3_PUBLIC_ENDPOINT=http://files.148-xxx-xxx-xxx.sslip.io
+# COOKIE_SECURE=false
+# APP_ENV=production

@@ -1,0 +1,39 @@
+# Production overrides — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Requires a production .env on the server (see .env.production.example).
+
+services:
+  db:
+    ports: []
+    restart: unless-stopped
+
+  minio:
+    # Bound to localhost only; Caddy proxies files.yourdomain.com → 9000 for downloads.
+    ports:
+      - "127.0.0.1:9000:9000"
+    restart: unless-stopped
+
+  minio-setup:
+    restart: "no"
+
+  backend:
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes: []
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes: []
+    restart: unless-stopped

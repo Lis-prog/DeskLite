@@ -14,10 +14,10 @@ from app.core.config import settings
 DOWNLOAD_URL_EXPIRY_SECONDS = 300
 
 
-def _s3_client():
+def _s3_client(*, endpoint_url: str | None = None):
     return boto3.client(
         "s3",
-        endpoint_url=settings.s3_endpoint,
+        endpoint_url=endpoint_url or settings.s3_endpoint,
         aws_access_key_id=settings.minio_root_user,
         aws_secret_access_key=settings.minio_root_password,
         config=Config(signature_version="s3v4"),
@@ -35,14 +35,24 @@ def build_storage_key(ticket_id: int, filename: str) -> str:
 class StorageService:
     """Upload ticket attachments to MinIO / S3."""
 
-    def __init__(self, client=None) -> None:
+    def __init__(self, client=None, presign_client=None) -> None:
         self._client = client
+        self._presign_client = presign_client
 
     @property
     def client(self):
         if self._client is None:
             self._client = _s3_client()
         return self._client
+
+    @property
+    def presign_client(self):
+        """Client used to sign download URLs (public hostname in production)."""
+        if self._presign_client is None:
+            self._presign_client = _s3_client(
+                endpoint_url=settings.s3_presign_endpoint
+            )
+        return self._presign_client
 
     def upload(self, *, key: str, body: bytes, content_type: str) -> None:
         self.client.put_object(
@@ -64,7 +74,7 @@ class StorageService:
         The link expires after `expires_in` seconds and forces a download with
         the original filename. The bucket itself never needs to be public.
         """
-        return self.client.generate_presigned_url(
+        return self.presign_client.generate_presigned_url(
             "get_object",
             Params={
                 "Bucket": settings.s3_bucket,
