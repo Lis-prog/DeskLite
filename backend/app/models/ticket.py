@@ -24,8 +24,12 @@ class Ticket(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="open")
-    priority: Mapped[str] = mapped_column(String(20), nullable=False, default="medium")
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="open", index=True
+    )
+    priority: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="medium", index=True
+    )
 
     requester_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True
