@@ -1,6 +1,8 @@
 import { ApiStatus } from "@/components/ApiStatus";
 import { StatusBadge } from "@/components/StatusBadge";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 export default function HomePage() {
   return (
     <div className="space-y-8">
@@ -35,8 +37,8 @@ export default function HomePage() {
       <section className="text-sm text-muted">
         <p>
           API docs:{" "}
-          <a className="text-brand underline" href="http://localhost:8000/docs">
-            localhost:8000/docs
+          <a className="text-brand underline" href={`${API_URL}/docs`}>
+            {API_URL.replace(/^https?:\/\//, "")}/docs
           </a>
         </p>
       </section>

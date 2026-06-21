@@ -20,6 +20,20 @@ from app.schemas.user import LoginRequest, TokenResponse, UserCreate, UserRead
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def _cookie_base(*, path: str) -> dict[str, object]:
+    """Shared Set-Cookie attributes; optional domain for app+api subdomain deploys."""
+    base: dict[str, object] = {
+        "httponly": True,
+        "secure": settings.cookie_secure,
+        "samesite": "lax",
+        "path": path,
+    }
+    domain = settings.cookie_domain.strip()
+    if domain:
+        base["domain"] = domain
+    return base
+
+
 def _set_auth_cookies(
     response: Response, *, access_token: str, refresh_token: str
 ) -> None:
@@ -27,37 +41,21 @@ def _set_auth_cookies(
         key="access_token",
         value=access_token,
         max_age=settings.access_token_minutes * 60,
-        httponly=True,
-        secure=settings.cookie_secure,
-        samesite="lax",
-        path="/",
+        **_cookie_base(path="/"),
     )
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         max_age=settings.refresh_token_days * 24 * 60 * 60,
-        httponly=True,
-        secure=settings.cookie_secure,
-        samesite="lax",
-        path="/api/v1/auth",
+        **_cookie_base(path="/api/v1/auth"),
     )
 
 
 def _clear_auth_cookies(response: Response) -> None:
-    response.delete_cookie(
-        key="access_token",
-        path="/",
-        httponly=True,
-        secure=settings.cookie_secure,
-        samesite="lax",
-    )
-    response.delete_cookie(
-        key="refresh_token",
-        path="/api/v1/auth",
-        httponly=True,
-        secure=settings.cookie_secure,
-        samesite="lax",
-    )
+    access = _cookie_base(path="/")
+    refresh = _cookie_base(path="/api/v1/auth")
+    response.delete_cookie(key="access_token", **access)
+    response.delete_cookie(key="refresh_token", **refresh)
 
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
