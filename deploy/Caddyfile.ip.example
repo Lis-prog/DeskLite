@@ -1,25 +1,40 @@
 # IP-only testing (no custom domain yet) — uses sslip.io free DNS.
-# Replace 148-xxx-xxx-xxx with your VPS IP dots as dashes.
-# Example IP 148.251.10.20 → 148-251-10-20.sslip.io
+# Replace 158-220-114-100 with your VPS IP dots as dashes.
+# Example IP 158.220.114.100 → 158-220-114-100.sslip.io
 #
 # Use HTTP only for quick smoke test (set COOKIE_SECURE=false in .env temporarily).
 # For real demo / examiner use a proper domain + HTTPS.
 
-http://148-xxx-xxx-xxx.sslip.io {
+# ── Option A (RECOMMENDED): single host — app + API on one origin ─────────────
+# Auth cookies work with Next.js middleware (same host for UI and /api/v1).
+# Copy to /etc/caddy/Caddyfile and match .env below.
+
+http://158-220-114-100.sslip.io {
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	handle /files/* {
+		reverse_proxy 127.0.0.1:9000
+	}
+
 	reverse_proxy 127.0.0.1:3000
 }
 
-http://api.148-xxx-xxx-xxx.sslip.io {
-	reverse_proxy 127.0.0.1:8000
-}
-
-http://files.148-xxx-xxx-xxx.sslip.io {
-	reverse_proxy 127.0.0.1:9000
-}
-
 # Matching .env (HTTP smoke test only):
-# FRONTEND_ORIGIN=http://148-xxx-xxx-xxx.sslip.io
-# NEXT_PUBLIC_API_URL=http://api.148-xxx-xxx-xxx.sslip.io
-# S3_PUBLIC_ENDPOINT=http://files.148-xxx-xxx-xxx.sslip.io
+# FRONTEND_ORIGIN=http://158-220-114-100.sslip.io
+# NEXT_PUBLIC_API_URL=http://158-220-114-100.sslip.io
+# S3_PUBLIC_ENDPOINT=http://158-220-114-100.sslip.io/files
 # COOKIE_SECURE=false
 # APP_ENV=production
+
+# ── Option B: separate subdomains (requires COOKIE_DOMAIN in .env) ────────────
+# http://158-220-114-100.sslip.io { reverse_proxy 127.0.0.1:3000 }
+# http://api.158-220-114-100.sslip.io { reverse_proxy 127.0.0.1:8000 }
+# http://files.158-220-114-100.sslip.io { reverse_proxy 127.0.0.1:9000 }
+#
+# FRONTEND_ORIGIN=http://158-220-114-100.sslip.io
+# NEXT_PUBLIC_API_URL=http://api.158-220-114-100.sslip.io
+# S3_PUBLIC_ENDPOINT=http://files.158-220-114-100.sslip.io
+# COOKIE_DOMAIN=158-220-114-100.sslip.io
+# COOKIE_SECURE=false

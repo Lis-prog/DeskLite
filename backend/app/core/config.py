@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # Set the `Secure` flag on auth cookies. Keep False for local http dev;
     # set True in any environment served over https.
     cookie_secure: bool = False
+    # Share auth cookies between app + api subdomains (e.g. 158-220-114-100.sslip.io).
+    # Leave empty for localhost / single-origin deploys where API and UI share one host.
+    cookie_domain: str = ""
 
     # Object storage (MinIO / S3)
     s3_endpoint: str = "http://minio:9000"

@@ -5,12 +5,13 @@
 
 services:
   db:
-    ports: []
+    # !reset replaces base 5432:5432 (Compose merges port lists by append otherwise).
+    ports: !reset []
     restart: unless-stopped
 
   minio:
     # Bound to localhost only; Caddy proxies files.yourdomain.com → 9000 for downloads.
-    ports:
+    ports: !override
       - "127.0.0.1:9000:9000"
     restart: unless-stopped
 
@@ -18,9 +19,9 @@ services:
     restart: "no"
 
   backend:
-    ports:
+    ports: !override
       - "127.0.0.1:8000:8000"
-    volumes: []
+    volumes: !reset []
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
     restart: unless-stopped
     environment:
@@ -33,7 +34,8 @@ services:
       target: production
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-    ports:
+    ports: !override
       - "127.0.0.1:3000:3000"
-    volumes: []
+    volumes: !reset []
+    command: !reset null
     restart: unless-stopped

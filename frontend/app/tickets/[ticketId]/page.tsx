@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -36,12 +37,6 @@ type SatisfactionRating = {
   submitted_at: string;
 };
 
-type TicketDetailPageProps = {
-  params: {
-    ticketId: string;
-  };
-};
-
 function formatDate(value: string | null) {
   if (!value) {
     return "Not set";
@@ -53,7 +48,10 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
-export default function TicketDetailPage({ params }: TicketDetailPageProps) {
+export default function TicketDetailPage() {
+  const router = useRouter();
+  const params = useParams<{ ticketId: string }>();
+  const ticketId = params.ticketId ?? "";
   const { user } = useAuth();
 
   const [ticket, setTicket] = useState<Ticket | null>(null);
@@ -78,6 +76,11 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
 
   const loadTicket = useCallback(
     async (isBackgroundRefresh = false) => {
+      if (!/^\d+$/.test(ticketId)) {
+        setError("Invalid ticket link.");
+        setIsLoading(false);
+        return;
+      }
       if (isBackgroundRefresh) {
         setIsRefreshing(true);
       } else {
@@ -85,7 +88,7 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
       }
       setError("");
       try {
-        const data = await api<Ticket>(`/tickets/${params.ticketId}`);
+        const data = await api<Ticket>(`/tickets/${ticketId}`);
         setTicket(data);
         setSelectedAssignee(data.assignee_id ? String(data.assignee_id) : "");
       } catch (err) {
@@ -102,8 +105,14 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
         }
       }
     },
-    [params.ticketId]
+    [ticketId]
   );
+
+  useEffect(() => {
+    if (ticketId === "new") {
+      router.replace("/tickets/new");
+    }
+  }, [ticketId, router]);
 
   useEffect(() => {
     // Initial fetch: loadTicket sets state only after the async request resolves.
@@ -130,7 +139,7 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
     async function loadSatisfaction() {
       try {
         const data = await api<SatisfactionRating | null>(
-          `/tickets/${params.ticketId}/satisfaction`
+          `/tickets/${ticketId}/satisfaction`
         );
         if (data) {
           setSatisfaction(data);
@@ -141,7 +150,7 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
       }
     }
     loadSatisfaction();
-  }, [params.ticketId]);
+  }, [ticketId]);
 
   async function handleAssignmentSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
