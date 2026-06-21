@@ -3,13 +3,17 @@ from __future__ import annotations
 from typing import Literal
 
 from fastapi import HTTPException, status
-from sqlalchemy import Select, or_
+from sqlalchemy import Select, case, or_
 
 from app.core.permissions import TicketViewer
 from app.models.ticket import Ticket
 from app.schemas.ticket import TicketPriority, TicketStatus
 
 TicketListScope = Literal["mine", "all"]
+TicketListSort = Literal["recent", "priority"]
+SortOrder = Literal["asc", "desc"]
+
+MAX_PAGE_SIZE = 100
 
 
 def escape_ilike(term: str) -> str:
@@ -77,3 +81,40 @@ def apply_ticket_list_filters(
         )
 
     return stmt
+
+
+def _priority_rank():
+    """Map priority labels to a numeric rank for SQL ORDER BY."""
+    return case(
+        (Ticket.priority == "urgent", 4),
+        (Ticket.priority == "high", 3),
+        (Ticket.priority == "medium", 2),
+        (Ticket.priority == "low", 1),
+        else_=0,
+    )
+
+
+def apply_ticket_list_sort(
+    stmt: Select[tuple[Ticket]],
+    *,
+    sort: TicketListSort = "recent",
+    order: SortOrder = "desc",
+) -> Select[tuple[Ticket]]:
+    """Apply list ordering. Clears any prior ORDER BY from the scoped query."""
+    stmt = stmt.order_by(None)
+    if sort == "recent":
+        column = Ticket.created_at
+    else:
+        column = _priority_rank()
+    return stmt.order_by(column.desc() if order == "desc" else column.asc())
+
+
+def apply_ticket_list_pagination(
+    stmt: Select[tuple[Ticket]],
+    *,
+    page: int,
+    page_size: int,
+) -> Select[tuple[Ticket]]:
+    """Slice a ticket list query to one page."""
+    offset = (page - 1) * page_size
+    return stmt.offset(offset).limit(page_size)
