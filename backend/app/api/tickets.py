@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.dependencies import _UserStub, get_current_user, require_roles
@@ -38,8 +38,13 @@ from app.schemas.ticket import (
 )
 from app.services.audit import record_status_change
 from app.services.ticket_query import (
+    MAX_PAGE_SIZE,
+    SortOrder,
     TicketListScope,
+    TicketListSort,
     apply_ticket_list_filters,
+    apply_ticket_list_pagination,
+    apply_ticket_list_sort,
     validate_list_filters,
 )
 from app.services.ticket_status import can_advance_status
@@ -49,6 +54,7 @@ router = APIRouter(prefix="/tickets", tags=["tickets"])
 
 @router.get("", response_model=list[TicketRead])
 def list_tickets(
+    response: Response,
     db: Session = Depends(get_db),
     current_user: _UserStub = Depends(get_current_user),
     status: TicketStatus | None = Query(default=None),
@@ -57,10 +63,16 @@ def list_tickets(
     unassigned: bool = Query(default=False),
     scope: TicketListScope | None = Query(default=None),
     q: str | None = Query(default=None, min_length=1, max_length=100),
+    sort: TicketListSort = Query(default="recent"),
+    order: SortOrder = Query(default="desc"),
+    page: int = Query(default=1, ge=1),
+    page_size: int | None = Query(default=None, ge=1, le=MAX_PAGE_SIZE),
 ) -> list[Ticket]:
     """List tickets visible to the caller. Scope is enforced in SQL per role.
 
     Optional filters combine with AND semantics and never widen RBAC scope.
+    Sort by ``recent`` (created_at) or ``priority``. Pass ``page_size`` to
+    paginate; ``X-Total-Count`` is set when pagination is active.
     """
     validate_list_filters(
         current_user,
@@ -78,6 +90,13 @@ def list_tickets(
         scope=scope,
         q=q,
     )
+    stmt = apply_ticket_list_sort(stmt, sort=sort, order=order)
+
+    if page_size is not None:
+        total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+        response.headers["X-Total-Count"] = str(total)
+        stmt = apply_ticket_list_pagination(stmt, page=page, page_size=page_size)
+
     return list(db.scalars(stmt))
 
 

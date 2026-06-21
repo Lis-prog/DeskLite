@@ -91,6 +91,12 @@ Filters never widen visibility beyond `scoped_ticket_query()`.
 | `scope=mine` | admin (meaningful) | Tickets where caller is requester or assignee |
 | `scope=all` | all (default for admin) | No extra narrowing beyond RBAC |
 | `q` | all authenticated | Case-insensitive search on title and description (parameterized) |
+| `sort=recent` | all authenticated | Order by `created_at` (default) |
+| `sort=priority` | all authenticated | Order by priority rank (urgent → low) |
+| `order` (`asc` / `desc`) | all authenticated | Sort direction (default `desc`) |
+| `page` | all authenticated | Page number when paginating (default `1`, min `1`) |
+| `page_size` | all authenticated | Page size (min `1`, max `100`); omit to return the full scoped list |
+| `X-Total-Count` (response header) | — | Total matching rows when `page_size` is set; omitted when not paginating |
 
 ## Golden rules these checks enforce
 
