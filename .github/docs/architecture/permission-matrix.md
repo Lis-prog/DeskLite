@@ -43,6 +43,7 @@ A user's role is **assigned by an admin**, never chosen at sign-up. Registration
 | `GET /api/v1/tickets/{id}/satisfaction` | yes* | yes* | yes* |
 | `POST /api/v1/tickets/{id}/satisfaction` | yes** | 403 | 403 |
 | `PATCH /api/v1/admin/tickets/{id}/assignee` | 403 | 403 | yes |
+| `GET /api/v1/metrics/tickets` | yes | yes | yes |
 
 \* Route is open to every authenticated role, but **object-level scope** applies
 (same rules as ticket by-ID). Callers who may not access the ticket get **403**.
@@ -97,6 +98,19 @@ Filters never widen visibility beyond `scoped_ticket_query()`.
 | `page` | all authenticated | Page number when paginating (default `1`, min `1`) |
 | `page_size` | all authenticated | Page size (min `1`, max `100`); omit to return the full scoped list |
 | `X-Total-Count` (response header) | — | Total matching rows when `page_size` is set; omitted when not paginating |
+
+## Metrics (`GET /api/v1/metrics/tickets`)
+
+Returns aggregated ticket counts for dashboard KPIs. Counts use the same role scope
+as list/by-ID ticket access (`scoped_ticket_query()`): customer → own tickets,
+agent → assigned tickets, admin → all tickets.
+
+| Field | Description |
+|---|---|
+| `total` | Count of visible tickets |
+| `by_status` | Count per status (`open`, `in_progress`, `resolved`, `closed`); missing buckets are `0` |
+| `by_priority` | Count per priority (`low`, `medium`, `high`, `urgent`); missing buckets are `0` |
+| `unassigned` | Visible tickets with no assignee |
 
 ## Golden rules these checks enforce
 
