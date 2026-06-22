@@ -21,15 +21,30 @@ class Settings(BaseSettings):
     # Set the `Secure` flag on auth cookies. Keep False for local http dev;
     # set True in any environment served over https.
     cookie_secure: bool = False
+    # Share auth cookies between app + api subdomains (e.g. 158-220-114-100.sslip.io).
+    # Leave empty for localhost / single-origin deploys where API and UI share one host.
+    cookie_domain: str = ""
 
     # Object storage (MinIO / S3)
     s3_endpoint: str = "http://minio:9000"
+    # Browser-facing MinIO URL for presigned downloads (e.g. https://files.example.com).
+    # Leave empty in dev to use s3_endpoint; must be set in production behind a reverse proxy.
+    s3_public_endpoint: str = ""
     s3_bucket: str = "desklite-attachments"
     minio_root_user: str = "minioadmin"
     minio_root_password: str = "minioadmin_change_me"
 
     # CORS
     frontend_origin: str = "http://localhost:3000"
+
+    # production disables Swagger UI on the public API
+    app_env: str = "development"
+
+
+    @property
+    def s3_presign_endpoint(self) -> str:
+        """Endpoint embedded in presigned URLs (must match what the browser can reach)."""
+        return self.s3_public_endpoint.strip() or self.s3_endpoint
 
 
 settings = Settings()

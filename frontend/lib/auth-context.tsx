@@ -31,7 +31,7 @@ type AuthContextValue = {
   isLoading: boolean;
   logout: () => Promise<void>;
   /** Call after a successful login to refresh the current-user snapshot. */
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<AuthUser | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -40,12 +40,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [state, setState] = useState<AuthState>({ status: "loading" });
 
-  const fetchMe = useCallback(async () => {
+  const fetchMe = useCallback(async (): Promise<AuthUser | null> => {
     try {
       const user = await api<AuthUser>("/auth/me");
       setState({ status: "authenticated", user });
+      return user;
     } catch {
       setState({ status: "unauthenticated" });
+      return null;
     }
   }, []);
 
@@ -57,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await api("/auth/logout", { method: "POST" });
+      await api<void>("/auth/logout", { method: "POST" });
     } catch {
       // best-effort — clear state regardless
     }

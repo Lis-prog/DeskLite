@@ -2,22 +2,24 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/Spinner";
+import { Input } from "@/components/ui/Input";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
 type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
+type TicketPriority = "low" | "medium" | "high" | "urgent";
 
 type Ticket = {
   id: number;
   title: string;
   description: string;
   status: TicketStatus;
-  priority: "low" | "medium" | "high" | "urgent";
+  priority: TicketPriority;
   requester_id: number;
   assignee_id: number | null;
   created_at: string;
@@ -26,6 +28,7 @@ type Ticket = {
 };
 
 type StatusFilter = TicketStatus | "all";
+type PriorityFilter = TicketPriority | "all";
 
 const STATUS_TABS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -34,6 +37,18 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
   { value: "resolved", label: "Resolved" },
   { value: "closed", label: "Closed" },
 ];
+
+const PRIORITY_OPTIONS: { value: PriorityFilter; label: string }[] = [
+  { value: "all", label: "All priorities" },
+  { value: "urgent", label: "Urgent" },
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low", label: "Low" },
+];
+
+// Matches the backend `q` query param limit (see GET /tickets).
+const SEARCH_MAX_LENGTH = 100;
+const SEARCH_DEBOUNCE_MS = 300;
 
 const STORAGE_KEY_PREFIX = "desklite:filter:";
 
@@ -54,8 +69,15 @@ function usePageMeta(role: string | undefined) {
 }
 
 export default function TicketsPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const { title, description } = usePageMeta(user?.role);
+
+  useEffect(() => {
+    if (user?.role === "agent") {
+      router.replace("/tickets/queue");
+    }
+  }, [user?.role, router]);
 
   // ── mount guard ──────────────────────────────────────────────────────────
   // Render a consistent skeleton during SSR; switch to real UI only after
@@ -68,8 +90,13 @@ export default function TicketsPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  // ── filter ───────────────────────────────────────────────────────────────
+  // ── filters ──────────────────────────────────────────────────────────────
+  // All filtering is delegated to the backend so role scope is always enforced
+  // server-side; the list can never leak tickets the caller cannot see.
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
     // Client-only mount guard to avoid SSR hydration mismatches.
@@ -88,6 +115,14 @@ export default function TicketsPage() {
     setStatusFilter(valid ? saved : defaultFilterFor(user.role));
   }, [mounted, user?.role]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Debounce the search box so we query the API only when typing pauses.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   function handleFilterChange(value: StatusFilter) {
     setStatusFilter(value);
     if (user) {
@@ -95,24 +130,48 @@ export default function TicketsPage() {
     }
   }
 
-  // ── load tickets ─────────────────────────────────────────────────────────
+  function handleClearFilters() {
+    setStatusFilter("all");
+    setPriorityFilter("all");
+    setSearch("");
+    if (user) {
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${user.role}`, "all");
+    }
+  }
+
+  // ── load tickets (server-side filtering) ───────────────────────────────────
   useEffect(() => {
     if (!mounted) return;
+    let cancelled = false;
+
     async function load() {
+      setIsLoading(true);
+      setError("");
       try {
-        const data = await api<Ticket[]>("/tickets");
-        setTickets(data);
+        const params = new URLSearchParams();
+        if (statusFilter !== "all") params.set("status", statusFilter);
+        if (priorityFilter !== "all") params.set("priority", priorityFilter);
+        if (debouncedSearch) params.set("q", debouncedSearch);
+        const query = params.toString();
+        const data = await api<Ticket[]>(`/tickets${query ? `?${query}` : ""}`);
+        if (!cancelled) setTickets(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not load tickets.");
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Could not load tickets.");
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }
-    load();
-  }, [mounted]);
 
-  const filtered =
-    statusFilter === "all" ? tickets : tickets.filter((t) => t.status === statusFilter);
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted, statusFilter, priorityFilter, debouncedSearch]);
+
+  const hasActiveFilters =
+    statusFilter !== "all" || priorityFilter !== "all" || debouncedSearch !== "";
 
   // ── SSR skeleton (identical on server + client → no hydration mismatch) ──
   if (!mounted) {
@@ -168,6 +227,46 @@ export default function TicketsPage() {
         })}
       </div>
 
+      {/* Search box + priority filter bar */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex-1">
+          <Input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            maxLength={SEARCH_MAX_LENGTH}
+            placeholder="Search by title or description"
+            aria-label="Search tickets"
+          />
+        </div>
+        <div className="sm:w-52">
+          <label htmlFor="priority-filter" className="sr-only">
+            Filter by priority
+          </label>
+          <select
+            id="priority-filter"
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value as PriorityFilter)}
+            className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand focus:ring-offset-2"
+          >
+            {PRIORITY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={handleClearFilters}
+            className="rounded-md px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center gap-2 rounded-lg border border-border bg-surface p-5">
@@ -184,20 +283,20 @@ export default function TicketsPage() {
       )}
 
       {/* Empty */}
-      {!isLoading && !error && filtered.length === 0 && (
+      {!isLoading && !error && tickets.length === 0 && (
         <div className="rounded-lg border border-border bg-surface p-5">
           <p className="text-sm text-muted">
-            {statusFilter === "all"
-              ? "No tickets found."
-              : `No ${statusFilter.replace("_", " ")} tickets.`}
+            {hasActiveFilters
+              ? "No tickets match your filters."
+              : "No tickets found."}
           </p>
         </div>
       )}
 
       {/* List */}
-      {!isLoading && !error && filtered.length > 0 && (
+      {!isLoading && !error && tickets.length > 0 && (
         <div className="rounded-lg border border-border bg-surface">
-          {filtered.map((ticket) => (
+          {tickets.map((ticket) => (
             <div
               key={ticket.id}
               className="flex flex-col gap-3 border-b border-border p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"

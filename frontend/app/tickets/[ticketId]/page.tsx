@@ -2,10 +2,13 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
+import { AttachmentPanel } from "@/components/AttachmentPanel";
 import { CommentThread } from "@/components/CommentThread";
+import { TicketStatusControls } from "@/components/TicketStatusControls";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/Spinner";
 import { ErrorState } from "@/components/ErrorState";
@@ -37,12 +40,6 @@ type SatisfactionRating = {
   submitted_at: string;
 };
 
-type TicketDetailPageProps = {
-  params: {
-    ticketId: string;
-  };
-};
-
 function formatDate(value: string | null) {
   if (!value) {
     return "Not set";
@@ -54,7 +51,10 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
-export default function TicketDetailPage({ params }: TicketDetailPageProps) {
+export default function TicketDetailPage() {
+  const router = useRouter();
+  const params = useParams<{ ticketId: string }>();
+  const ticketId = params.ticketId ?? "";
   const { user } = useAuth();
 
   const [ticket, setTicket] = useState<Ticket | null>(null);
@@ -79,6 +79,11 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
 
   const loadTicket = useCallback(
     async (isBackgroundRefresh = false) => {
+      if (!/^\d+$/.test(ticketId)) {
+        setError("Invalid ticket link.");
+        setIsLoading(false);
+        return;
+      }
       if (isBackgroundRefresh) {
         setIsRefreshing(true);
       } else {
@@ -86,7 +91,7 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
       }
       setError("");
       try {
-        const data = await api<Ticket>(`/tickets/${params.ticketId}`);
+        const data = await api<Ticket>(`/tickets/${ticketId}`);
         setTicket(data);
         setSelectedAssignee(data.assignee_id ? String(data.assignee_id) : "");
       } catch (err) {
@@ -103,8 +108,14 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
         }
       }
     },
-    [params.ticketId]
+    [ticketId]
   );
+
+  useEffect(() => {
+    if (ticketId === "new") {
+      router.replace("/tickets/new");
+    }
+  }, [ticketId, router]);
 
   useEffect(() => {
     // Initial fetch: loadTicket sets state only after the async request resolves.
@@ -128,12 +139,10 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
   }, [isAdmin]);
 
   useEffect(() => {
-    if (!ticket) return;
-    const currentTicket = ticket;
     async function loadSatisfaction() {
       try {
         const data = await api<SatisfactionRating | null>(
-          `/tickets/${currentTicket.id}/satisfaction`
+          `/tickets/${ticketId}/satisfaction`
         );
         if (data) {
           setSatisfaction(data);
@@ -144,7 +153,7 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
       }
     }
     loadSatisfaction();
-  }, [ticket?.id]);
+  }, [ticketId]);
 
   async function handleAssignmentSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -290,6 +299,17 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
         </div>
       </section>
 
+      {user && (
+        <TicketStatusControls
+          ticketId={ticket.id}
+          status={ticket.status}
+          assigneeId={ticket.assignee_id}
+          userRole={user.role}
+          userId={user.id}
+          onUpdated={() => loadTicket(true)}
+        />
+      )}
+
       {isAdmin && (
         <section
           className="space-y-4 rounded-lg border border-border bg-surface p-5"
@@ -385,6 +405,8 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
           {ratingSuccess && <p className="text-sm text-status-resolved">{ratingSuccess}</p>}
         </section>
       )}
+
+      <AttachmentPanel ticketId={ticket.id} />
 
       <CommentThread ticketId={ticket.id} />
     </div>

@@ -44,7 +44,7 @@ class TicketUpdate(BaseModel):
 
 class TicketStatusUpdate(BaseModel):
     """Dedicated status-transition payload. Kept separate so a client can never
-    flip status through the generic update path (AGENTS.md §5, rule #2)."""
+    flip status through the generic update path (permission-matrix, golden rule #2)."""
 
     model_config = ConfigDict(extra="forbid")
 

@@ -1,14 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import admin, auth, health, tickets
+from app.api import admin, auth, health, metrics, tickets
 from app.core.config import settings
+
+_is_production = settings.app_env.lower() == "production"
 
 app = FastAPI(
     title="DeskLite API",
     version="0.1.0",
-    docs_url="/docs",
-    openapi_url="/openapi.json",
+    docs_url=None if _is_production else "/docs",
+    openapi_url=None if _is_production else "/openapi.json",
 )
 
 app.add_middleware(
@@ -23,6 +25,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
+app.include_router(metrics.router, prefix="/api/v1")
 app.include_router(tickets.router, prefix="/api/v1")
 
 

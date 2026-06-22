@@ -25,10 +25,9 @@ export default function LoginPage() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      // Refresh the cached current-user snapshot so Nav, role-based defaults,
-      // and redirects see the authenticated user without a full page reload.
-      await refreshUser();
-      router.push("/tickets");
+      const me = await refreshUser();
+      router.push(me?.role === "agent" ? "/tickets/queue" : "/tickets");
+      router.refresh();
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Could not connect to the server."
