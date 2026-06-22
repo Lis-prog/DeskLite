@@ -5,8 +5,12 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies import _UserStub, get_current_user, require_roles
 from app.db.session import get_db
-from app.schemas.metrics import AgentWorkloadRead, TicketMetricsRead
-from app.services.metrics import aggregate_agent_workload, aggregate_ticket_metrics
+from app.schemas.metrics import AgentWorkloadRead, ResolutionTimeRead, TicketMetricsRead
+from app.services.metrics import (
+    aggregate_agent_workload,
+    aggregate_resolution_time,
+    aggregate_ticket_metrics,
+)
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
 
@@ -31,3 +35,15 @@ def ticket_metrics(
 def agent_workload(db: Session = Depends(get_db)) -> list[AgentWorkloadRead]:
     """Return active ticket counts per agent for workload balancing. Admin-only."""
     return aggregate_agent_workload(db)
+
+
+@router.get("/resolution-time", response_model=ResolutionTimeRead)
+def resolution_time(
+    db: Session = Depends(get_db),
+    current_user: _UserStub = Depends(get_current_user),
+) -> ResolutionTimeRead:
+    """Return average and median creation-to-resolution time.
+
+    Respects the same role scope as ``GET /api/v1/tickets``.
+    """
+    return aggregate_resolution_time(db, current_user)

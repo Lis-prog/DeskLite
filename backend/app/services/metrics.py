@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import statistics
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -82,3 +84,36 @@ def aggregate_agent_workload(db: Session) -> list[AgentWorkloadRead]:
         )
         for agent in agents
     ]
+
+
+def aggregate_resolution_time(db: Session, user: TicketViewer) -> ResolutionTimeRead:
+    """Average and median creation-to-resolution time for tickets the caller can see.
+
+    A ticket counts as resolved once it has a ``resolved_at`` timestamp, regardless
+    of its current status, so a later re-open keeps the original (first) resolution
+    time instead of being dropped from the stats.
+    """
+    scoped = scoped_ticket_query(user).order_by(None).subquery()
+
+    rows = db.execute(
+        select(scoped.c.created_at, scoped.c.resolved_at).where(
+            scoped.c.resolved_at.is_not(None)
+        )
+    ).all()
+
+    durations = [
+        (resolved_at - created_at).total_seconds()
+        for created_at, resolved_at in rows
+        if created_at is not None and resolved_at is not None
+    ]
+
+    if not durations:
+        return ResolutionTimeRead(
+            resolved_count=0, average_seconds=None, median_seconds=None
+        )
+
+    return ResolutionTimeRead(
+        resolved_count=len(durations),
+        average_seconds=sum(durations) / len(durations),
+        median_seconds=statistics.median(durations),
+    )
