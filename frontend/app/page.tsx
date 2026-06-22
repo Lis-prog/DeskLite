@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { ApiStatus } from "@/components/ApiStatus";
-import { Button } from "@/components/ui/Button";
 
 const FEATURES = [
   {
@@ -30,8 +29,11 @@ export default function HomePage() {
           through their lifecycle, and track it all with role-based access.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <Link href="/register">
-            <Button>Get started</Button>
+          <Link
+            href="/register"
+            className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
+          >
+            Get started
           </Link>
           <Link
             href="/login"

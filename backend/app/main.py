@@ -7,8 +7,6 @@ from app.core.security_headers import SecurityHeadersMiddleware
 
 _is_production = settings.app_env.lower() == "production"
 
-_is_production = settings.app_env.lower() == "production"
-
 app = FastAPI(
     title="DeskLite API",
     version="0.1.0",
