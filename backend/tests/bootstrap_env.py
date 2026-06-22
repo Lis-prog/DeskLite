@@ -30,3 +30,6 @@ def _use_localhost_when_db_unresolvable() -> None:
 
 
 _use_localhost_when_db_unresolvable()
+
+# Keep the full auth test suite from tripping per-IP limits in CI and local pytest.
+os.environ.setdefault("AUTH_RATE_LIMIT_MAX", "1000")

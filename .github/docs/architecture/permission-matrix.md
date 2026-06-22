@@ -44,6 +44,7 @@ A user's role is **assigned by an admin**, never chosen at sign-up. Registration
 | `POST /api/v1/tickets/{id}/satisfaction` | yes** | 403 | 403 |
 | `PATCH /api/v1/admin/tickets/{id}/assignee` | 403 | 403 | yes |
 | `GET /api/v1/metrics/tickets` | yes | yes | yes |
+| `GET /api/v1/metrics/resolution-time` | yes | yes | yes |
 | `GET /api/v1/metrics/agents/workload` | 403 | 403 | yes |
 
 \* Route is open to every authenticated role, but **object-level scope** applies
@@ -119,8 +120,30 @@ Admin-only. Returns one row per user with role `agent`, sorted by name then id.
 `active_ticket_count` is the number of assigned tickets in `open` or `in_progress`
 status (resolved/closed tickets are excluded).
 
+## Resolution time (`GET /api/v1/metrics/resolution-time`)
+
+Returns average and median resolution time over tickets visible to the caller
+(same scope as `GET /api/v1/tickets`). Only tickets with a `resolved_at` timestamp
+are counted; duration is `created_at` → `resolved_at`. Re-opens never overwrite
+`resolved_at`, so metrics stay honest.
+
+| Field | Description |
+|---|---|
+| `resolved_count` | Visible tickets with a first-resolution timestamp |
+| `average_seconds` | Mean resolution time in seconds; `null` when `resolved_count` is 0 |
+| `median_seconds` | Median resolution time in seconds; `null` when `resolved_count` is 0 |
+
+## Authentication rate limiting
+
+`POST /api/v1/auth/register`, `POST /api/v1/auth/login`, and `POST /api/v1/auth/refresh`
+share a per–client-IP sliding window (see `AUTH_RATE_LIMIT_*` env vars). When the
+limit is exceeded the API returns **429** with a `Retry-After` header. Logout and
+profile routes are not throttled.
+
 ## Golden rules these checks enforce
 
 1. Identity (`user.id`, `role`) comes from the validated JWT, never the request body.
 2. Role is whitelisted out of `UserCreate` — a client cannot self-assign `agent`/`admin`.
+   Auth/user schemas use `extra="forbid"` so unexpected fields (e.g. `role`, `id`)
+   are rejected with **422**.
 3. RBAC (role allowed?) **and** ownership (may this user see this row?) are both checked on by-ID access.
