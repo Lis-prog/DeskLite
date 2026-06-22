@@ -44,6 +44,7 @@ A user's role is **assigned by an admin**, never chosen at sign-up. Registration
 | `POST /api/v1/tickets/{id}/satisfaction` | yes** | 403 | 403 |
 | `PATCH /api/v1/admin/tickets/{id}/assignee` | 403 | 403 | yes |
 | `GET /api/v1/metrics/tickets` | yes | yes | yes |
+| `GET /api/v1/metrics/agents/workload` | 403 | 403 | yes |
 
 \* Route is open to every authenticated role, but **object-level scope** applies
 (same rules as ticket by-ID). Callers who may not access the ticket get **403**.
@@ -111,6 +112,12 @@ agent → assigned tickets, admin → all tickets.
 | `by_status` | Count per status (`open`, `in_progress`, `resolved`, `closed`); missing buckets are `0` |
 | `by_priority` | Count per priority (`low`, `medium`, `high`, `urgent`); missing buckets are `0` |
 | `unassigned` | Visible tickets with no assignee |
+
+## Agent workload (`GET /api/v1/metrics/agents/workload`)
+
+Admin-only. Returns one row per user with role `agent`, sorted by name then id.
+`active_ticket_count` is the number of assigned tickets in `open` or `in_progress`
+status (resolved/closed tickets are excluded).
 
 ## Golden rules these checks enforce
 
