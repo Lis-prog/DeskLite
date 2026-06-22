@@ -160,6 +160,7 @@ Uses dev overrides: hot reload, volume mounts, localhost URLs.
 | Problem | Fix |
 |---------|-----|
 | Login fails after HTTPS | `COOKIE_SECURE=true`, `FRONTEND_ORIGIN` exact match |
+| Missing security headers | Production sets HSTS via Caddy + app middleware (`APP_ENV=production`) |
 | CORS errors | `FRONTEND_ORIGIN` must match browser URL (https, no trailing slash) |
 | Attachment download 404 | `S3_PUBLIC_ENDPOINT` + Caddy `files.*` block must match |
 | Frontend calls wrong API | Rebuild frontend: `NEXT_PUBLIC_API_URL` is set at **build** time |
