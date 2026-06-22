@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import admin, auth, health, metrics, tickets
 from app.core.config import settings
+from app.core.security_headers import SecurityHeadersMiddleware
 
 _is_production = settings.app_env.lower() == "production"
 
@@ -20,6 +21,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SecurityHeadersMiddleware)
 
 # All v1 routers mount under /api/v1
 app.include_router(health.router, prefix="/api/v1")
