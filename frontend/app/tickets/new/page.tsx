@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { api } from "@/lib/api";
@@ -118,21 +119,16 @@ export default function NewTicketPage() {
         </p>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="title" className="text-sm font-medium">
-              Subject
-            </label>
-            <input
-              id="title"
-              type="text"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Short summary of the problem"
-              required
-              maxLength={200}
-              className={inputClassName}
-            />
-          </div>
+          <Input
+            id="title"
+            label="Subject"
+            type="text"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="Short summary of the problem"
+            required
+            maxLength={200}
+          />
 
           <div>
             <label htmlFor="description" className="text-sm font-medium">
