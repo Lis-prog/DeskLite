@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
@@ -11,9 +10,9 @@ import { PriorityBadge } from "@/components/PriorityBadge";
 import { Spinner } from "@/components/Spinner";
 import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
+import { RequireAdmin } from "@/components/RequireAdmin";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
 
 type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
 type TicketPriority = "low" | "medium" | "high" | "urgent";
@@ -76,25 +75,20 @@ function toDateLabel(iso: string) {
 }
 
 export default function DashboardPage() {
-  const { user, isLoading: authLoading } = useAuth();
-  const router = useRouter();
+  return (
+    <RequireAdmin>
+      <DashboardContent />
+    </RequireAdmin>
+  );
+}
 
+function DashboardContent() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      router.replace("/login");
-      return;
-    }
-    if (user.role !== "admin") {
-      router.replace("/tickets");
-      return;
-    }
-
     async function load() {
       try {
         const [ticketData, userData] = await Promise.all([
@@ -113,7 +107,7 @@ export default function DashboardPage() {
     }
 
     load();
-  }, [user, authLoading, router]);
+  }, []);
 
   // ── Derived stats ────────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -187,7 +181,7 @@ export default function DashboardPage() {
   );
 
   // ── Render ───────────────────────────────────────────────────────────────
-  if (authLoading || (isLoading && !error)) {
+  if (isLoading && !error) {
     return (
       <div className="flex items-center justify-center py-32">
         <Spinner size="h-8 w-8" label="Loading dashboard…" />

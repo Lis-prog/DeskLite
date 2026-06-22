@@ -34,8 +34,11 @@ def test_register_rejects_duplicate_email(client, db_session):
     assert res.json()["detail"] == "Email already registered."
 
 
-def test_register_ignores_role_in_body(client, db_session):
-    """Privilege-escalation guard: a client cannot self-assign a role."""
+def test_register_rejects_role_in_body(client, db_session):
+    """Privilege-escalation guard: a client cannot self-assign a role.
+
+    `UserCreate` forbids extra fields, so sending `role` is rejected outright
+    (422) rather than silently ignored."""
     res = client.post(
         "/api/v1/auth/register",
         json={
@@ -45,8 +48,7 @@ def test_register_ignores_role_in_body(client, db_session):
             "role": "admin",
         },
     )
-    assert res.status_code == 201
-    assert res.json()["role"] == "customer"
+    assert res.status_code == 422
 
 
 def test_register_rejects_short_password(client, db_session):
