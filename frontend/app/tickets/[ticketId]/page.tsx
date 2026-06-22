@@ -10,6 +10,9 @@ import { AttachmentPanel } from "@/components/AttachmentPanel";
 import { CommentThread } from "@/components/CommentThread";
 import { TicketStatusControls } from "@/components/TicketStatusControls";
 import { Button } from "@/components/ui/Button";
+import { Spinner } from "@/components/Spinner";
+import { ErrorState } from "@/components/ErrorState";
+import { EmptyState } from "@/components/EmptyState";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
@@ -203,31 +206,37 @@ export default function TicketDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-border bg-surface p-5">
-        <p className="text-sm text-muted">Loading ticket details...</p>
+      <div className="flex items-center justify-center py-32">
+        <Spinner size="h-8 w-8" label="Loading ticket details…" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-4 rounded-lg border border-border bg-surface p-5">
-        <p className="text-sm text-muted">{error}</p>
-        <Link className="text-sm font-medium text-brand underline" href="/tickets">
-          Back to tickets
-        </Link>
-      </div>
+      <ErrorState
+        title="Could not load ticket"
+        description={error}
+        action={
+          <Link className="text-sm font-medium text-brand underline" href="/tickets">
+            Back to tickets
+          </Link>
+        }
+      />
     );
   }
 
   if (!ticket) {
     return (
-      <div className="space-y-4 rounded-lg border border-border bg-surface p-5">
-        <p className="text-sm text-muted">Ticket not found.</p>
-        <Link className="text-sm font-medium text-brand underline" href="/tickets">
-          Back to tickets
-        </Link>
-      </div>
+      <EmptyState
+        title="Ticket not found"
+        description="This ticket may have been removed or you may not have access to it."
+        action={
+          <Link className="text-sm font-medium text-brand underline" href="/tickets">
+            Back to tickets
+          </Link>
+        }
+      />
     );
   }
 

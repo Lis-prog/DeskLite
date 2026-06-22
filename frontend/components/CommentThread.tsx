@@ -5,6 +5,8 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/Spinner";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 
 type CommentAuthor = {
   id: number;
@@ -117,25 +119,26 @@ export function CommentThread({ ticketId }: CommentThreadProps) {
       </h2>
 
       {/* Comment list */}
-      <div className="rounded-lg border border-border bg-surface">
-        {isLoading && (
-          <div className="flex items-center gap-2 p-5 text-sm text-muted">
-            <Spinner size="h-4 w-4" />
-            <span>Loading comments…</span>
-          </div>
-        )}
+      {isLoading && (
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-surface p-5 text-sm text-muted">
+          <Spinner size="h-4 w-4" />
+          <span>Loading comments…</span>
+        </div>
+      )}
 
-        {!isLoading && loadError && (
-          <p className="p-5 text-sm text-muted">{loadError}</p>
-        )}
+      {!isLoading && loadError && (
+        <ErrorState title="Could not load comments" description={loadError} />
+      )}
 
-        {!isLoading && !loadError && comments.length === 0 && (
-          <p className="p-5 text-sm text-muted">
-            No comments yet. Be the first to reply.
-          </p>
-        )}
+      {!isLoading && !loadError && comments.length === 0 && (
+        <EmptyState
+          title="No comments yet"
+          description="Be the first to reply."
+        />
+      )}
 
-        {!isLoading && !loadError && comments.length > 0 && (
+      {!isLoading && !loadError && comments.length > 0 && (
+        <div className="rounded-lg border border-border bg-surface">
           <ul className="divide-y divide-border">
             {comments.map((comment) => (
               <li key={comment.id} className="flex gap-3 p-4">
@@ -159,9 +162,9 @@ export function CommentThread({ ticketId }: CommentThreadProps) {
               </li>
             ))}
           </ul>
-        )}
-        <div ref={bottomRef} />
-      </div>
+          <div ref={bottomRef} />
+        </div>
+      )}
 
       {/* Reply form */}
       <form onSubmit={handleSubmit} className="space-y-2">

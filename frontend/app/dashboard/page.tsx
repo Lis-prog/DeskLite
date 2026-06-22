@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { Spinner } from "@/components/Spinner";
 import { ErrorState } from "@/components/ErrorState";
+import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -339,7 +340,10 @@ export default function DashboardPage() {
 
         {recentTickets.length === 0 ? (
           <CardBody>
-            <p className="text-sm text-muted">No tickets yet.</p>
+            <EmptyState
+              title="No tickets yet"
+              description="New tickets will appear here as they are created."
+            />
           </CardBody>
         ) : (
           <div>
