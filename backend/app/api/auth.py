@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.dependencies import _UserStub, get_current_user, require_roles
+from app.core.rate_limit import enforce_auth_rate_limit
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -59,7 +60,11 @@ def _clear_auth_cookies(response: Response) -> None:
 
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-def register(payload: UserCreate, db: Session = Depends(get_db)) -> User:
+def register(
+    payload: UserCreate,
+    db: Session = Depends(get_db),
+    _rate_limit: None = Depends(enforce_auth_rate_limit),
+) -> User:
     """Self-service sign-up. New accounts are always created as 'customer';
     role is never accepted from the request body (anti privilege-escalation)."""
     existing = db.scalar(select(User).where(User.email == payload.email))
@@ -86,6 +91,7 @@ def login(
     payload: LoginRequest,
     response: Response,
     db: Session = Depends(get_db),
+    _rate_limit: None = Depends(enforce_auth_rate_limit),
 ) -> TokenResponse:
     """Exchange email + password for JWT access and refresh tokens.
 
@@ -123,7 +129,11 @@ def logout(
 
 
 @router.post("/refresh", response_model=TokenResponse)
-def refresh_tokens(request: Request, response: Response) -> TokenResponse:
+def refresh_tokens(
+    request: Request,
+    response: Response,
+    _rate_limit: None = Depends(enforce_auth_rate_limit),
+) -> TokenResponse:
     """Exchange a valid refresh cookie for a new access token (and rotated refresh)."""
     credentials_exc = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

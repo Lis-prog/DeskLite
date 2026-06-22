@@ -1,0 +1,20 @@
+title = "DeskLite gitleaks allowlist"
+
+[allowlist]
+description = "Placeholder secrets in templates, docs, and CI fixtures"
+paths = [
+  '''\.env\.example$''',
+  '''\.env\.production\.example$''',
+  '''\.github/workflows/.*''',
+  '''DEPLOY\.md''',
+  '''\.github/docs/.*''',
+]
+regexTarget = "match"
+regexes = [
+  '''change_me''',
+  '''ci-test-secret-not-real''',
+  '''testpassword''',
+  '''devpassword_change_me''',
+  '''minioadmin_change_me''',
+  '''password123''',
+]
