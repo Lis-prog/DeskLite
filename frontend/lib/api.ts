@@ -82,3 +82,44 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
   return (await res.json()) as T;
 }
+
+// ── Metrics ──────────────────────────────────────────────────────────────
+// Types mirror the backend response models in app/schemas/metrics.py.
+
+export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
+export type TicketPriority = "low" | "medium" | "high" | "urgent";
+
+export type TicketMetrics = {
+  total: number;
+  by_status: Record<TicketStatus, number>;
+  by_priority: Record<TicketPriority, number>;
+  unassigned: number;
+};
+
+export type AgentWorkload = {
+  agent_id: number;
+  full_name: string;
+  email: string;
+  active_ticket_count: number;
+};
+
+export type ResolutionTime = {
+  resolved_count: number;
+  average_seconds: number | null;
+  median_seconds: number | null;
+};
+
+/** GET /metrics/tickets — counts grouped by status and priority (role-scoped). */
+export function getTicketMetrics(): Promise<TicketMetrics> {
+  return api<TicketMetrics>("/metrics/tickets");
+}
+
+/** GET /metrics/agents/workload — active ticket load per agent (admin only). */
+export function getAgentWorkload(): Promise<AgentWorkload[]> {
+  return api<AgentWorkload[]>("/metrics/agents/workload");
+}
+
+/** GET /metrics/resolution-time — average/median creation-to-resolution time. */
+export function getResolutionTime(): Promise<ResolutionTime> {
+  return api<ResolutionTime>("/metrics/resolution-time");
+}

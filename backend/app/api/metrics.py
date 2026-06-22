@@ -27,20 +27,6 @@ def ticket_metrics(
     return aggregate_ticket_metrics(db, current_user)
 
 
-@router.get("/resolution-time", response_model=ResolutionTimeRead)
-def resolution_time(
-    db: Session = Depends(get_db),
-    current_user: _UserStub = Depends(get_current_user),
-) -> ResolutionTimeRead:
-    """Return average and median resolution time over resolved tickets.
-
-    Scoped to tickets the caller may see (same rules as ``GET /api/v1/tickets``)
-    and computed from each ticket's first-resolution timestamp, so re-opens never
-    inflate the metrics.
-    """
-    return aggregate_resolution_time(db, current_user)
-
-
 @router.get(
     "/agents/workload",
     response_model=list[AgentWorkloadRead],
@@ -49,3 +35,15 @@ def resolution_time(
 def agent_workload(db: Session = Depends(get_db)) -> list[AgentWorkloadRead]:
     """Return active ticket counts per agent for workload balancing. Admin-only."""
     return aggregate_agent_workload(db)
+
+
+@router.get("/resolution-time", response_model=ResolutionTimeRead)
+def resolution_time(
+    db: Session = Depends(get_db),
+    current_user: _UserStub = Depends(get_current_user),
+) -> ResolutionTimeRead:
+    """Return average and median creation-to-resolution time.
+
+    Respects the same role scope as ``GET /api/v1/tickets``.
+    """
+    return aggregate_resolution_time(db, current_user)

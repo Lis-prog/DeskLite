@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/Alert";
 import { api } from "@/lib/api";
 
 export default function RegisterPage() {
@@ -10,11 +11,13 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
+    setIsError(false);
     setIsSubmitting(true);
 
     try {
@@ -32,6 +35,7 @@ export default function RegisterPage() {
       setEmail("");
       setPassword("");
     } catch (error) {
+      setIsError(true);
       setMessage(
         error instanceof Error
           ? error.message
@@ -97,7 +101,9 @@ export default function RegisterPage() {
             />
           </div>
 
-          {message && <p className="text-sm text-muted">{message}</p>}
+          {message && (
+            <Alert variant={isError ? "error" : "success"}>{message}</Alert>
+          )}
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Creating account..." : "Create account"}

@@ -4,8 +4,16 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/Alert";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+
+/** Where each role lands right after signing in. */
+function landingPathForRole(role?: string): string {
+  if (role === "admin") return "/dashboard";
+  if (role === "agent") return "/tickets/queue";
+  return "/tickets";
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,7 +34,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       const me = await refreshUser();
-      router.push(me?.role === "agent" ? "/tickets/queue" : "/tickets");
+      router.push(landingPathForRole(me?.role));
       router.refresh();
     } catch (error) {
       setMessage(
@@ -76,7 +84,7 @@ export default function LoginPage() {
             />
           </div>
 
-          {message && <p className="text-sm text-muted">{message}</p>}
+          {message && <Alert variant="error">{message}</Alert>}
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Signing in..." : "Sign in"}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Alert } from "@/components/Alert";
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { api } from "@/lib/api";
@@ -164,17 +165,17 @@ export default function NewTicketPage() {
           </div>
 
           {message && (
-            <p className="text-sm text-muted">
+            <Alert variant="error">
               {message}
               {message.includes("Not authenticated") && (
                 <>
                   {" "}
-                  <Link href="/login" className="text-brand underline">
+                  <Link href="/login" className="underline">
                     Log in
                   </Link>
                 </>
               )}
-            </p>
+            </Alert>
           )}
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>

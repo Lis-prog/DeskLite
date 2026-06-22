@@ -12,10 +12,17 @@ import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
 import { RequireAdmin } from "@/components/RequireAdmin";
 import { Button } from "@/components/ui/Button";
-import { api } from "@/lib/api";
-
-type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
-type TicketPriority = "low" | "medium" | "high" | "urgent";
+import {
+  api,
+  getAgentWorkload,
+  getResolutionTime,
+  getTicketMetrics,
+  type AgentWorkload,
+  type ResolutionTime,
+  type TicketMetrics,
+  type TicketPriority,
+  type TicketStatus,
+} from "@/lib/api";
 
 type Ticket = {
   id: number;
@@ -74,6 +81,19 @@ function toDateLabel(iso: string) {
   });
 }
 
+/** Human-readable duration from seconds, e.g. 9000 → "2h 30m". */
+function formatDuration(seconds: number | null): string {
+  if (seconds === null) return "—";
+  const totalMinutes = Math.round(seconds / 60);
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours < 24) return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  return remHours ? `${days}d ${remHours}h` : `${days}d`;
+}
+
 export default function DashboardPage() {
   return (
     <RequireAdmin>
@@ -83,6 +103,9 @@ export default function DashboardPage() {
 }
 
 function DashboardContent() {
+  const [metrics, setMetrics] = useState<TicketMetrics | null>(null);
+  const [workload, setWorkload] = useState<AgentWorkload[]>([]);
+  const [resolution, setResolution] = useState<ResolutionTime | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState("");
@@ -91,10 +114,20 @@ function DashboardContent() {
   useEffect(() => {
     async function load() {
       try {
-        const [ticketData, userData] = await Promise.all([
-          api<Ticket[]>("/tickets"),
-          api<User[]>("/admin/users"),
-        ]);
+        // Aggregates come from the metrics API (server-side, role-scoped);
+        // the raw ticket list still feeds the trend + recent-tickets views,
+        // and the user list feeds the team head-count cards.
+        const [metricsData, workloadData, resolutionData, ticketData, userData] =
+          await Promise.all([
+            getTicketMetrics(),
+            getAgentWorkload(),
+            getResolutionTime(),
+            api<Ticket[]>("/tickets"),
+            api<User[]>("/admin/users"),
+          ]);
+        setMetrics(metricsData);
+        setWorkload(workloadData);
+        setResolution(resolutionData);
         setTickets(ticketData);
         setUsers(userData);
       } catch (err) {
@@ -109,49 +142,20 @@ function DashboardContent() {
     load();
   }, []);
 
-  // ── Derived stats ────────────────────────────────────────────────────────
-  const stats = useMemo(() => {
-    const byStatus: Record<TicketStatus, number> = {
-      open: 0,
-      in_progress: 0,
-      resolved: 0,
-      closed: 0,
-    };
-    const byPriority: Record<TicketPriority, number> = {
-      low: 0,
-      medium: 0,
-      high: 0,
-      urgent: 0,
-    };
-    let unassigned = 0;
-
-    for (const t of tickets) {
-      byStatus[t.status] = (byStatus[t.status] ?? 0) + 1;
-      byPriority[t.priority] = (byPriority[t.priority] ?? 0) + 1;
-      if (t.assignee_id === null) unassigned += 1;
-    }
-
-    return { total: tickets.length, byStatus, byPriority, unassigned };
-  }, [tickets]);
-
   const agents = useMemo(() => users.filter((u) => u.role === "agent"), [users]);
   const customers = useMemo(
     () => users.filter((u) => u.role === "customer"),
     [users]
   );
 
-  // Tickets per agent (open + in-progress only — the actionable ones)
-  const agentLoad = useMemo(() => {
-    const counts: Record<number, number> = {};
-    for (const t of tickets) {
-      if (t.assignee_id !== null && (t.status === "open" || t.status === "in_progress")) {
-        counts[t.assignee_id] = (counts[t.assignee_id] ?? 0) + 1;
-      }
-    }
-    return agents
-      .map((a) => ({ label: a.full_name, value: counts[a.id] ?? 0 }))
-      .sort((a, b) => b.value - a.value);
-  }, [agents, tickets]);
+  // Active tickets per agent, straight from /metrics/agents/workload.
+  const agentLoad = useMemo(
+    () =>
+      [...workload]
+        .sort((a, b) => b.active_ticket_count - a.active_ticket_count)
+        .map((a) => ({ label: a.full_name, value: a.active_ticket_count })),
+    [workload]
+  );
 
   // 7-day trend
   const trendDays = 7;
@@ -203,6 +207,10 @@ function DashboardContent() {
     );
   }
 
+  if (!metrics || !resolution) {
+    return null;
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -213,22 +221,26 @@ function DashboardContent() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Total tickets" value={stats.total} />
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <StatCard label="Total tickets" value={metrics.total} />
         <StatCard
           label="Open"
-          value={stats.byStatus.open}
+          value={metrics.by_status.open}
           accent="text-status-open"
         />
         <StatCard
           label="In progress"
-          value={stats.byStatus.in_progress}
+          value={metrics.by_status.in_progress}
           accent="text-status-progress"
         />
         <StatCard
           label="Unassigned"
-          value={stats.unassigned}
-          accent={stats.unassigned > 0 ? "text-priority-urgent" : undefined}
+          value={metrics.unassigned}
+          accent={metrics.unassigned > 0 ? "text-priority-urgent" : undefined}
+        />
+        <StatCard
+          label="Avg resolution"
+          value={formatDuration(resolution.average_seconds)}
         />
       </div>
 
@@ -243,7 +255,7 @@ function DashboardContent() {
             <BarChart
               data={STATUS_ORDER.map((s) => ({
                 label: STATUS_LABELS[s],
-                value: stats.byStatus[s],
+                value: metrics.by_status[s],
                 colorClass: STATUS_COLOR[s],
               }))}
             />
@@ -259,7 +271,7 @@ function DashboardContent() {
             <BarChart
               data={PRIORITY_ORDER.map((p) => ({
                 label: p.charAt(0).toUpperCase() + p.slice(1),
-                value: stats.byPriority[p],
+                value: metrics.by_priority[p],
                 colorClass: PRIORITY_COLOR[p],
               }))}
             />
@@ -290,6 +302,41 @@ function DashboardContent() {
         </CardHeader>
         <CardBody>
           <BarChart data={trendData} />
+        </CardBody>
+      </Card>
+
+      {/* Resolution time */}
+      <Card>
+        <CardHeader>
+          <h2 className="text-sm font-semibold">Resolution time</h2>
+        </CardHeader>
+        <CardBody>
+          {resolution.resolved_count === 0 ? (
+            <p className="text-sm text-muted">
+              No resolved tickets yet — stats appear once tickets are resolved.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <p className="text-xs text-muted">Average</p>
+                <p className="mt-1 text-2xl font-bold tabular-nums">
+                  {formatDuration(resolution.average_seconds)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted">Median</p>
+                <p className="mt-1 text-2xl font-bold tabular-nums">
+                  {formatDuration(resolution.median_seconds)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted">Resolved tickets</p>
+                <p className="mt-1 text-2xl font-bold tabular-nums">
+                  {resolution.resolved_count}
+                </p>
+              </div>
+            </div>
+          )}
         </CardBody>
       </Card>
 
@@ -374,7 +421,7 @@ function StatCard({
   accent,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   accent?: string;
 }) {
   return (
