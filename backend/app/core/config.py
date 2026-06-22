@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     # production disables Swagger UI on the public API
     app_env: str = "development"
 
+    # Auth brute-force throttling (per client IP, sliding window)
+    auth_rate_limit_enabled: bool = True
+    auth_rate_limit_max: int = 10
+    auth_rate_limit_window_seconds: int = 60
+
 
     @property
     def s3_presign_endpoint(self) -> str:

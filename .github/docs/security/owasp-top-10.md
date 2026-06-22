@@ -23,8 +23,8 @@
 | A03 | Injection | ✅ | SQLAlchemy parameterized queries; Pydantic validation; comment HTML sanitization |
 | A04 | Insecure Design | ✅ | Status state machine; RBAC-by-construction; least-privilege defaults; permission matrix as source of truth |
 | A05 | Security Misconfiguration | ✅ | Security headers; CORS locked to one origin; Swagger off in prod; secrets via env |
-| A06 | Vulnerable & Outdated Components | 🟡 | `pip-audit` + `npm audit` in CI; pinned versions and lockfiles |
-| A07 | Identification & Authentication Failures | 🟡 | bcrypt, access+refresh JWTs, generic 401s; auth rate limiting still planned |
+| A06 | Vulnerable & Outdated Components | 🟡 | `pip-audit` + `npm audit` + gitleaks secret scan in CI |
+| A07 | Identification & Authentication Failures | ✅ | bcrypt, JWT cookies, generic 401s, auth rate limiting (429) |
 | A08 | Software & Data Integrity Failures | 🟡 | CI gates + branch protection + lockfiles; no artifact signing yet |
 | A09 | Security Logging & Monitoring Failures | 🟡 | Audit log of status/assignment changes; centralized monitoring is Sprint 4 |
 | A10 | Server-Side Request Forgery (SSRF) | ⚪ | No user-controlled outbound requests; egress only to a fixed storage endpoint |
@@ -51,8 +51,9 @@ The highest-priority risk for a ticketing app, addressed at two layers:
 - **List filters never widen scope** — query params combine with AND on top of the
   role scope (`backend/app/services/ticket_query.py`).
 
-Evidence: `backend/tests/test_permissions.py`, `test_attachment_downloads.py`
-(cross-user/IDOR → 403/404), `test_admin.py`, `test_ticket_status_transition.py`.
+Evidence: `backend/tests/test_permissions.py`, `test_idor.py`,
+`test_attachment_downloads.py` (cross-user/IDOR → 403/404), `test_admin.py`,
+`test_ticket_status_transition.py`.
 Source of truth: `.github/docs/architecture/permission-matrix.md`.
 
 ## A02 — Cryptographic Failures ✅
@@ -78,8 +79,9 @@ Evidence: `backend/tests/test_auth.py`, `test_attachment_downloads.py`,
 - **SQL injection** — all data access goes through SQLAlchemy with bound parameters;
   no string-built SQL. Full-text search (`q`) is parameterized and case-insensitive
   (`backend/app/services/ticket_query.py`).
-- **Input validation** — Pydantic schemas whitelist writable fields and reject
-  malformed payloads before they reach the DB (`backend/app/schemas/`).
+- **Input validation** — Pydantic schemas whitelist writable fields; auth/user
+  schemas use `extra="forbid"` so privilege fields are rejected with **422**
+  (`backend/app/schemas/`).
 - **Stored XSS** — comment text is stripped of HTML/script markup before storage as
   defense-in-depth, and rendered as plain text in the UI
   (`backend/app/core/sanitize.py`).
@@ -121,12 +123,14 @@ Evidence: `backend/tests/test_security_headers.py`, `test_production_config.py`.
 - **CI dependency scanning** runs on every push/PR: `pip-audit` for Python and
   `npm audit --audit-level=high` for Node, in the dedicated `security` job
   (`.github/workflows/ci.yml`).
+- **Committed-secret scanning** — `gitleaks` runs in the same job with
+  `.gitleaks.toml` allowlisting known placeholders in templates and CI fixtures.
 - Dependencies are pinned and lockfiles committed for reproducible installs.
 
 Planned: scheduled re-scans / automated upgrade PRs (e.g. Dependabot) are not yet
 configured.
 
-## A07 — Identification and Authentication Failures 🟡
+## A07 — Identification and Authentication Failures ✅
 
 - **Strong credential storage** (bcrypt) and a minimum password length of 8
   (`backend/app/schemas/user.py`).
@@ -134,12 +138,11 @@ configured.
   cookies, and strict token-type checks.
 - **Anti-enumeration** — login failures always return a generic 401 regardless of
   whether the email exists (`backend/app/api/auth.py`).
+- **Brute-force throttling** — `POST /auth/register`, `/login`, and `/refresh` are
+  rate-limited per client IP (`backend/app/core/rate_limit.py`); excess attempts
+  return **429** with `Retry-After`.
 
-Planned: **rate limiting / brute-force throttling** on authentication endpoints is
-tracked separately (Sprint 3 Security Hardening, owned by Lis) and is **not yet
-merged**. Until then, this risk is only partially mitigated.
-
-Evidence: `backend/tests/test_auth.py`.
+Evidence: `backend/tests/test_auth.py`, `test_auth_rate_limit.py`.
 
 ## A08 — Software and Data Integrity Failures 🟡
 
