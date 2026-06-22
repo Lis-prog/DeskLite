@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.permissions import TicketViewer, scoped_ticket_query
 from app.models.ticket import PRIORITIES, STATUSES, Ticket
 from app.models.user import User
-from app.schemas.metrics import AgentWorkloadRead, TicketMetricsRead
+from app.schemas.metrics import AgentWorkloadRead, ResolutionTimeRead, TicketMetricsRead
 
 _ACTIVE_STATUSES = ("open", "in_progress")
 
