@@ -42,7 +42,10 @@ docker compose up --build        # start everything (rebuild images)
 docker compose logs -f backend   # tail one service
 docker compose down              # stop
 docker compose down -v           # stop + wipe DB volume
+docker compose exec backend python seed.py   # load demo users and tickets
 ```
+
+After seeding, sign in with any printed account (e.g. `admin@desklite.dev` / `Admin1234!`).
 
 ## Team
 

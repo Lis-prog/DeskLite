@@ -3,6 +3,8 @@
 import { FormEvent, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { Spinner } from "@/components/Spinner";
 import { api } from "@/lib/api";
 
@@ -150,11 +152,14 @@ export function AttachmentPanel({ ticketId }: AttachmentPanelProps) {
         )}
 
         {!isLoading && loadError && (
-          <p className="p-4 text-sm text-muted">{loadError}</p>
+          <ErrorState title="Could not load attachments" description={loadError} />
         )}
 
         {!isLoading && !loadError && attachments.length === 0 && (
-          <p className="p-4 text-sm text-muted">No attachments yet.</p>
+          <EmptyState
+            title="No attachments yet"
+            description="Upload a file below to attach it to this ticket."
+          />
         )}
 
         {!isLoading && !loadError && attachments.length > 0 && (

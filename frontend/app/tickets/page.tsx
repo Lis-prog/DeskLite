@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Spinner } from "@/components/Spinner";
@@ -111,9 +113,9 @@ export default function TicketsPage() {
     const saved = localStorage.getItem(key) as StatusFilter | null;
     const valid = saved && STATUS_TABS.some((t) => t.value === saved);
     // Syncs filter from localStorage (external system) after mount.
-    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatusFilter(valid ? saved : defaultFilterFor(user.role));
-  }, [mounted, user?.role]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mounted, user?.role]);
 
   // Debounce the search box so we query the API only when typing pauses.
   useEffect(() => {
@@ -215,7 +217,7 @@ export default function TicketsPage() {
               aria-selected={active}
               onClick={() => handleFilterChange(tab.value)}
               className={[
-                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2",
                 active
                   ? "bg-brand text-white"
                   : "text-muted hover:bg-brand-light hover:text-brand",
@@ -277,20 +279,41 @@ export default function TicketsPage() {
 
       {/* Error */}
       {!isLoading && error && (
-        <div className="rounded-lg border border-border bg-surface p-5">
-          <p className="text-sm text-muted">{error}</p>
-        </div>
+        <ErrorState title="Could not load tickets" description={error} />
       )}
 
       {/* Empty */}
       {!isLoading && !error && tickets.length === 0 && (
-        <div className="rounded-lg border border-border bg-surface p-5">
-          <p className="text-sm text-muted">
-            {hasActiveFilters
-              ? "No tickets match your filters."
-              : "No tickets found."}
-          </p>
-        </div>
+        <EmptyState
+          title={
+            hasActiveFilters ? "No tickets match your filters" : "No tickets yet"
+          }
+          description={
+            hasActiveFilters
+              ? "Try clearing filters or adjusting your search."
+              : user?.role === "customer"
+                ? "Create a new ticket to get help from the support team."
+                : "Tickets will appear here as they are created."
+          }
+          action={
+            !hasActiveFilters && user?.role !== "agent" ? (
+              <Link
+                href="/tickets/new"
+                className="inline-flex items-center rounded-md bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
+              >
+                New ticket
+              </Link>
+            ) : hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="rounded-md border border-border px-4 py-2 text-sm font-medium text-muted transition-colors hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
+              >
+                Clear filters
+              </button>
+            ) : undefined
+          }
+        />
       )}
 
       {/* List */}

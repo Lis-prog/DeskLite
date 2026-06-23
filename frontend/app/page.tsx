@@ -56,7 +56,7 @@ export default function HomePage() {
         ))}
       </section>
 
-      <section className="flex items-center justify-between rounded-lg border border-border bg-surface p-5">
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
           System status
         </h2>
