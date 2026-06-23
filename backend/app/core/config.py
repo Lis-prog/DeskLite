@@ -37,6 +37,13 @@ class Settings(BaseSettings):
     # CORS
     frontend_origin: str = "http://localhost:3000"
 
+    # SLA: hours from creation until an unresolved ticket is flagged "overdue".
+    # Configurable per priority via env (SLA_HOURS_URGENT, etc.).
+    sla_hours_urgent: int = 4
+    sla_hours_high: int = 24
+    sla_hours_medium: int = 72
+    sla_hours_low: int = 168
+
     # production disables Swagger UI on the public API
     app_env: str = "development"
 

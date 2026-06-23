@@ -14,6 +14,10 @@ const config: Config = {
         surface: "#ffffff",
         muted: "#6b7280",
         border: "#e5e7eb",
+        danger: {
+          DEFAULT: "#dc2626",
+          light: "#fef2f2",
+        },
         status: {
           open: "#3b82f6",
           progress: "#f59e0b",
