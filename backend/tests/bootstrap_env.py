@@ -31,5 +31,19 @@ def _use_localhost_when_db_unresolvable() -> None:
 
 _use_localhost_when_db_unresolvable()
 
+
+def _use_isolated_test_database() -> None:
+    """Point pytest at the dedicated test DB (same as CI) so seeded dev rows
+    do not break admin-scoped count assertions."""
+    url = os.environ.get("DATABASE_URL", "")
+    if not url or url.rstrip("/").endswith("/desklite_test"):
+        return
+    if url.rstrip("/").endswith("/desklite"):
+        base = url.rsplit("/", 1)[0]
+        os.environ["DATABASE_URL"] = f"{base}/desklite_test"
+
+
+_use_isolated_test_database()
+
 # Keep the full auth test suite from tripping per-IP limits in CI and local pytest.
 os.environ.setdefault("AUTH_RATE_LIMIT_MAX", "1000")
