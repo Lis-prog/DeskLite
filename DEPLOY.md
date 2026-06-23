@@ -145,6 +145,26 @@ Docker internal network:
 
 ---
 
+## Health checks & uptime monitoring
+
+Downtime is detectable at three layers:
+
+- **Health endpoints** (backend):
+  - `GET /api/v1/health` — liveness; always `200` while the process is up.
+  - `GET /api/v1/health/db` — readiness; returns `200` when Postgres is reachable
+    and **`503`** when it is not, so monitors can detect downtime from the status
+    code alone.
+- **Container healthchecks** — `backend` and `frontend` declare Docker
+  `healthcheck`s (alongside the existing `db`/`minio` ones) in
+  `docker-compose.yml`, so they apply in dev and production. Check status with
+  `docker compose ps` (look for `healthy` / `unhealthy`).
+- **Uptime monitor** — `.github/workflows/uptime.yml` runs on a schedule
+  (every 15 min) and on demand, probing the live `/api/v1/health` and
+  `/api/v1/health/db` endpoints. A failed run signals downtime (GitHub notifies
+  on failed scheduled runs). Set the repository **variable** `HEALTHCHECK_URL`
+  (e.g. `https://api.yourdomain.com`) to enable it; while unset the job skips
+  cleanly so it never raises false alarms.
+
 ## Local dev (unchanged)
 
 ```bash

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -15,12 +15,18 @@ def health():
 
 
 @router.get("/health/db")
-def health_db(db: Session = Depends(get_db)):
-    """Readiness check — confirms the API can reach Postgres."""
+def health_db(response: Response, db: Session = Depends(get_db)):
+    """Readiness check — confirms the API can reach Postgres.
+
+    Returns HTTP 503 when the database is unreachable (not just a 200 with a
+    flag) so external uptime monitors and container orchestrators can detect
+    downtime from the status code alone.
+    """
     try:
         db.execute(text("SELECT 1"))
         return {"status": "ok", "database": "connected"}
     except Exception:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return {"status": "degraded", "database": "unavailable"}
 
 
