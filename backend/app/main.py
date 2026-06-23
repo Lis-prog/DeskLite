@@ -3,9 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import admin, auth, health, metrics, tickets
 from app.core.config import settings
+from app.core.logging_config import configure_logging
+from app.core.request_tracing import RequestTracingMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
 
 _is_production = settings.app_env.lower() == "production"
+
+configure_logging(level=settings.log_level, json_logs=settings.use_json_logs)
 
 app = FastAPI(
     title="DeskLite API",
@@ -22,6 +26,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(SecurityHeadersMiddleware)
+# Added last so it wraps every other middleware: the correlation id is bound
+# before anything else runs and access logs capture the full request lifecycle.
+app.add_middleware(RequestTracingMiddleware)
 
 # All v1 routers mount under /api/v1
 app.include_router(health.router, prefix="/api/v1")

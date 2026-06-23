@@ -45,11 +45,24 @@ class Settings(BaseSettings):
     auth_rate_limit_max: int = 10
     auth_rate_limit_window_seconds: int = 60
 
+    # Observability
+    log_level: str = "INFO"
+    # Emit single-line JSON logs (good for aggregation). When unset, defaults to
+    # JSON in production and human-readable console logs elsewhere.
+    log_json: bool | None = None
+
 
     @property
     def s3_presign_endpoint(self) -> str:
         """Endpoint embedded in presigned URLs (must match what the browser can reach)."""
         return self.s3_public_endpoint.strip() or self.s3_endpoint
+
+    @property
+    def use_json_logs(self) -> bool:
+        """Resolve the effective log format, defaulting to JSON in production."""
+        if self.log_json is not None:
+            return self.log_json
+        return self.app_env.lower() == "production"
 
 
 settings = Settings()
