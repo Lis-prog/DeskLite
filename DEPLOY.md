@@ -9,7 +9,8 @@ Deploy the full stack (PostgreSQL, MinIO, FastAPI, Next.js) behind Caddy with HT
 | **1. Domain DNS** | Your registrar | A records → VPS IP for `app`, `api`, `files` subdomains |
 | **2. Production `.env`** | VPS only | Copy `.env.production.example` → `.env` — passwords, JWT, URLs |
 | **3. Caddyfile** | VPS `/etc/caddy/Caddyfile` | Replace `yourdomain.com` with your real domain |
-| **4. GitHub secrets** (optional CD) | Repo Settings → Secrets | `VPS_HOST`, `VPS_SSH_USER`, `VPS_SSH_KEY` |
+| **4. GitHub secrets** (manual prod CD) | Repo Settings → Secrets | `VPS_HOST`, `VPS_SSH_USER`, `VPS_SSH_KEY` |
+| **5. GitHub secrets** (auto staging CD) | Repo Settings → Secrets | `STAGING_VPS_HOST`, `STAGING_VPS_SSH_USER`, `STAGING_VPS_SSH_KEY` (+ optional `STAGING_URL` variable) |
 
 ---
 
@@ -120,6 +121,27 @@ Or trigger **Actions → Deploy → Run workflow** (after GitHub secrets are set
 
 ---
 
+## Automatic staging deployment (CD)
+
+Every push to `main` (i.e. a merged PR) is deployed to **staging automatically**
+once CI is green. The `Deploy (staging)` workflow runs after the `CI` workflow
+completes successfully on `main`, then SSHes into the staging host and runs the
+same pull → build → migrate → up steps as the production deploy.
+
+- **Trigger:** `CI` success on `main` (via `workflow_run`), or manual
+  **Actions → Deploy (staging) → Run workflow**.
+- **Only green commits ship:** if CI fails, the deploy job is skipped.
+- **Required secrets:** `STAGING_VPS_HOST`, `STAGING_VPS_SSH_USER`,
+  `STAGING_VPS_SSH_KEY`. Optional repo **variable** `STAGING_URL` shows the
+  environment link in the Actions UI.
+- If you only have one server, point the `STAGING_*` secrets at the same host
+  (ideally a separate `~/DeskLite` checkout / compose project for isolation).
+
+Concurrency is limited to one staging deploy at a time, and in-flight deploys are
+allowed to finish rather than being cancelled.
+
+---
+
 ## Architecture
 
 ```
@@ -197,4 +219,5 @@ Uses dev overrides: hot reload, volume mounts, localhost URLs.
 | `.env.production.example` | Server env template |
 | `deploy/Caddyfile.example` | HTTPS reverse proxy |
 | `deploy/deploy.sh` | Pull, build, migrate, up |
-| `.github/workflows/deploy.yml` | Optional manual CD |
+| `.github/workflows/deploy.yml` | Manual production CD |
+| `.github/workflows/deploy-staging.yml` | Automatic staging CD on merge to main |

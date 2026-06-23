@@ -1,0 +1,46 @@
+name: Deploy (staging)
+
+# Continuous deployment: every commit merged to main that passes CI is
+# automatically built and deployed to the staging environment over SSH.
+# Triggers after the CI workflow completes on main so we only ship green
+# commits; can also be run on demand from the Actions tab.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One staging deploy at a time; let an in-flight deploy finish rather than
+# cancelling it mid-build.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & deploy to staging
+    runs-on: ubuntu-latest
+    # On the workflow_run trigger, only deploy when CI succeeded. A manual
+    # workflow_dispatch run has no workflow_run payload, so it always proceeds.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    steps:
+      - name: Build & deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.STAGING_VPS_HOST }}
+          username: ${{ secrets.STAGING_VPS_SSH_USER }}
+          key: ${{ secrets.STAGING_VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd ~/DeskLite
+            git pull origin main
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm backend alembic upgrade head
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
