@@ -9,6 +9,7 @@ from jose import jwt
 
 from app.core.config import settings
 from app.core.dependencies import _UserStub, require_roles
+from app.db.session import get_db
 from app.main import app
 
 client = TestClient(app, raise_server_exceptions=True)
@@ -45,6 +46,28 @@ def test_health_db_ok():
     body = res.json()
     assert body["status"] == "ok"
     assert body["database"] == "connected"
+
+
+def test_health_db_unavailable_returns_503():
+    """When Postgres is unreachable, readiness must surface a 503 so monitors
+    and orchestrators detect downtime from the status code."""
+
+    class _BoomSession:
+        def execute(self, *args, **kwargs):
+            raise RuntimeError("database unavailable")
+
+    def _override_get_db():
+        yield _BoomSession()
+
+    app.dependency_overrides[get_db] = _override_get_db
+    try:
+        res = client.get("/api/v1/health/db")
+        assert res.status_code == 503
+        body = res.json()
+        assert body["status"] == "degraded"
+        assert body["database"] == "unavailable"
+    finally:
+        app.dependency_overrides.pop(get_db, None)
 
 
 def test_root_ok():

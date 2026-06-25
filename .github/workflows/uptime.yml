@@ -1,0 +1,41 @@
+name: Uptime monitor
+
+# Periodically probes the deployed health endpoints so downtime is detectable:
+# a failed run notifies the repo owner (GitHub emails failed scheduled runs).
+# Set the repository variable HEALTHCHECK_URL to the deployment base URL
+# (e.g. https://api.yourdomain.com) to enable probing; until then the job
+# skips cleanly so it never raises false alarms.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uptime-monitor
+  cancel-in-progress: true
+
+jobs:
+  healthcheck:
+    name: Probe health endpoints
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe liveness and readiness
+        env:
+          BASE_URL: ${{ vars.HEALTHCHECK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BASE_URL}" ]; then
+            echo "::notice::HEALTHCHECK_URL is not set; skipping uptime probe."
+            exit 0
+          fi
+          base="${BASE_URL%/}"
+          echo "Probing ${base}/api/v1/health (liveness)"
+          curl --fail --silent --show-error --max-time 10 --retry 3 --retry-delay 5 "${base}/api/v1/health"
+          echo
+          echo "Probing ${base}/api/v1/health/db (readiness)"
+          curl --fail --silent --show-error --max-time 10 --retry 3 --retry-delay 5 "${base}/api/v1/health/db"
+          echo
+          echo "All health endpoints healthy."
