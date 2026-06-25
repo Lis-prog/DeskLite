@@ -200,7 +200,7 @@ export default function AgentQueuePage() {
               aria-selected={active}
               onClick={() => handleFilterChange(tab.value)}
               className={[
-                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2",
                 active
                   ? "bg-brand text-white"
                   : "text-muted hover:bg-brand-light hover:text-brand",

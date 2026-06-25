@@ -16,6 +16,7 @@ from sqlalchemy import select
 
 from app.core.security import hash_password
 from app.db.session import SessionLocal
+from app.models.audit_log import AuditLog
 from app.models.ticket import Ticket
 from app.models.user import User
 
@@ -234,6 +235,36 @@ def seed() -> None:
             )
             backfilled += 1
 
+        # Demo satisfaction ratings on closed tickets (for presentation).
+        SEED_SATISFACTION: dict[str, int] = {
+            "Dashboard loads slowly": 4,
+            "Typo in registration success msg": 5,
+            "Filter resets on page refresh": 3,
+        }
+        satisfaction_created = 0
+        for title, rating in SEED_SATISFACTION.items():
+            ticket = db.scalar(select(Ticket).where(Ticket.title == title))
+            if ticket is None or ticket.status != "closed":
+                continue
+            existing = db.scalar(
+                select(AuditLog).where(
+                    AuditLog.ticket_id == ticket.id,
+                    AuditLog.action == "satisfaction_rating",
+                )
+            )
+            if existing is not None:
+                continue
+            db.add(
+                AuditLog(
+                    actor_id=ticket.requester_id,
+                    ticket_id=ticket.id,
+                    action="satisfaction_rating",
+                    from_value=None,
+                    to_value=str(rating),
+                )
+            )
+            satisfaction_created += 1
+
         db.commit()
 
         # ── Report ───────────────────────────────────────────────────────────
@@ -249,6 +280,7 @@ def seed() -> None:
         print(
             f"\nTickets created: {created_tickets}  |  skipped: {skipped_tickets}"
             f"  |  resolved_at backfilled: {backfilled}"
+            f"  |  satisfaction ratings: {satisfaction_created}"
         )
         print("───────────────────────────────────────────────────────────\n")
 
