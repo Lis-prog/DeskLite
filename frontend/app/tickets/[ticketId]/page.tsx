@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { StatusBadge } from "@/components/StatusBadge";
+import { OverdueBadge } from "@/components/OverdueBadge";
 import { AttachmentPanel } from "@/components/AttachmentPanel";
 import { CommentThread } from "@/components/CommentThread";
 import { TicketStatusControls } from "@/components/TicketStatusControls";
@@ -27,6 +28,8 @@ type Ticket = {
   created_at: string;
   updated_at: string;
   resolved_at: string | null;
+  sla_due_at: string;
+  is_overdue: boolean;
 };
 
 type User = {
@@ -258,6 +261,7 @@ export default function TicketDetailPage() {
 
       <section className="rounded-lg border border-border bg-surface p-5">
         <div className="flex flex-wrap gap-2">
+          {ticket.is_overdue && <OverdueBadge />}
           <StatusBadge status={ticket.status} />
           <PriorityBadge priority={ticket.priority} />
         </div>
@@ -296,6 +300,13 @@ export default function TicketDetailPage() {
         <div>
           <p className="text-sm text-muted">Resolved</p>
           <p className="font-medium">{formatDate(ticket.resolved_at)}</p>
+        </div>
+
+        <div>
+          <p className="text-sm text-muted">SLA due</p>
+          <p className={`font-medium ${ticket.is_overdue ? "text-danger" : ""}`}>
+            {formatDate(ticket.sla_due_at)}
+          </p>
         </div>
       </section>
 

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { PriorityBadge } from "@/components/PriorityBadge";
+import { OverdueBadge } from "@/components/OverdueBadge";
 import { Spinner } from "@/components/Spinner";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardBody } from "@/components/ui/Card";
@@ -27,6 +28,7 @@ type Ticket = {
   created_at: string;
   updated_at: string;
   resolved_at: string | null;
+  is_overdue: boolean;
 };
 
 type QueueFilter = "active" | TicketStatus | "all";
@@ -257,7 +259,8 @@ export default function AgentQueuePage() {
                   {ticket.title}
                 </Link>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                {ticket.is_overdue && <OverdueBadge />}
                 <PriorityBadge priority={ticket.priority} />
                 <StatusBadge status={ticket.status} />
               </div>

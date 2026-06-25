@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
+
+from app.core import sla
 
 # Mirror the DB CHECK constraints (see models/ticket.py). Dual-guard per ADR-004:
 # invalid values are rejected here (422) and again by the database.
@@ -94,3 +96,15 @@ class TicketRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     resolved_at: datetime | None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def sla_due_at(self) -> datetime:
+        """When this ticket is due per its priority SLA (see core/sla.py)."""
+        return sla.sla_due_at(self)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def is_overdue(self) -> bool:
+        """True when an active ticket has passed its SLA deadline."""
+        return sla.is_overdue(self)
