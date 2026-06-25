@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="DeskLite">
+  <rect width="180" height="180" rx="40" fill="#4f46e5"/>
+  <path
+    fill="#ffffff"
+    d="M50 58c0-4.97 4.03-9 9-9h62c4.97 0 9 4.03 9 9v64c0 4.97-4.03 9-9 9H59c-4.97 0-9-4.03-9-9V58Zm12 13.5h74v8.5H62v-8.5Zm0 17h74v8.5H62v-8.5Zm0 17h46v8.5H62v-8.5Z"
+  />
+</svg>
