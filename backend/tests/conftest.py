@@ -4,6 +4,7 @@ from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import event
 from sqlalchemy.orm import Session
 
 import tests.bootstrap_env  # noqa: F401  # must run before app imports
@@ -14,11 +15,34 @@ from app.models.ticket import Ticket
 from app.models.user import User
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _ensure_test_database_schema() -> None:
+    """Apply migrations to the isolated test database once per pytest session."""
+    from alembic.config import Config
+
+    from alembic import command
+
+    command.upgrade(Config("alembic.ini"), "head")
+
+
 @pytest.fixture
 def db_session() -> Generator[Session, None, None]:
+    """Per-test DB session rolled back after each test.
+
+    Uses a nested savepoint so route handlers that call ``commit()`` do not
+    leak rows into later tests on the shared Postgres instance.
+    """
     connection = engine.connect()
     transaction = connection.begin()
-    session = Session(bind=connection)
+    session = Session(bind=connection, join_transaction_mode="create_savepoint")
+
+    session.begin_nested()
+
+    @event.listens_for(session, "after_transaction_end")
+    def restart_savepoint(sess: Session, trans) -> None:  # noqa: ANN001
+        if trans.nested and not trans._parent.nested:
+            sess.begin_nested()
+
     try:
         yield session
     finally:
