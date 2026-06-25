@@ -6,10 +6,16 @@ from app.core.config import settings
 from app.core.logging_config import configure_logging
 from app.core.request_tracing import RequestTracingMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
+from app.core.sentry import init_sentry
 
 _is_production = settings.app_env.lower() == "production"
 
 configure_logging(level=settings.log_level, json_logs=settings.use_json_logs)
+init_sentry(
+    dsn=settings.sentry_dsn,
+    environment=settings.app_env,
+    release="desklite-backend@0.1.0",
+)
 
 app = FastAPI(
     title="DeskLite API",

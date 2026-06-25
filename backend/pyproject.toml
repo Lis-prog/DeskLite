@@ -1,6 +1,9 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --tb=short"
+markers = [
+    "unit: pure unit tests that do not require database setup",
+]
 
 [tool.coverage.run]
 source = ["app"]

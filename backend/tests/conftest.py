@@ -16,8 +16,13 @@ from app.models.user import User
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _ensure_test_database_schema() -> None:
+def _ensure_test_database_schema(request: pytest.FixtureRequest) -> None:
     """Apply migrations to the isolated test database once per pytest session."""
+    if request.session.items and all(
+        item.get_closest_marker("unit") is not None for item in request.session.items
+    ):
+        return
+
     from alembic.config import Config
 
     from alembic import command
