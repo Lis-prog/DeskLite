@@ -1,7 +1,5 @@
 import Link from "next/link";
 
-import { ApiStatus } from "@/components/ApiStatus";
-
 const FEATURES = [
   {
     title: "Raise tickets",
@@ -54,13 +52,6 @@ export default function HomePage() {
             <p className="mt-1 text-sm text-muted">{feature.description}</p>
           </div>
         ))}
-      </section>
-
-      <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-          System status
-        </h2>
-        <ApiStatus />
       </section>
     </div>
   );

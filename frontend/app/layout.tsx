@@ -7,6 +7,10 @@ import { Nav } from "@/components/Nav";
 export const metadata: Metadata = {
   title: "DeskLite",
   description: "Internal support ticket system",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
+  },
 };
 
 export default function RootLayout({
