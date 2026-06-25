@@ -51,6 +51,37 @@ SEED_USERS = [
         "password": "Customer1234!",
         "role": "customer",
     },
+    {
+    "full_name": "Valza Dalipi",
+    "email": "valza@desklite.online",
+    "password": "Agent1234!",
+    "role": "agent",
+    },
+    {
+    "full_name": "Lis Pruthi",
+    "email": "lis@desklite.online",
+    "password": "Admin1234!",
+    "role": "admin",
+    },
+    {
+    "full_name": "Paulina Delija",
+    "email": "paulina@desklite.online",
+    "password": "Admin1234!",
+    "role": "admin",
+    },
+    {
+    "full_name": "Rrezart Buzuku",
+    "email": "rrezart@desklite.online",
+    "password": "Admin1234!",
+    "role": "admin",
+    },
+    {
+    "full_name": "Egzona Haskuka",
+    "email": "egzona@desklite.online",
+    "password": "Customer1234!",
+    "role": "customer",
+    },
+
 ]
 
 def _ago(days: int = 0, hours: int = 0) -> datetime:
