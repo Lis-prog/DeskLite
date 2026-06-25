@@ -47,6 +47,8 @@ docker compose exec backend python seed.py   # load demo users and tickets
 
 After seeding, sign in with any printed account (e.g. `admin@desklite.dev` / `Admin1234!`).
 
+**Presentation walkthrough:** see [`docs/DEMO.md`](docs/DEMO.md) for the full demo script, seed accounts, and live IDOR steps.
+
 ## Team
 
 | Person | Role |
@@ -69,9 +71,11 @@ Example logins (after seed — see script output for current passwords if custom
 
 | Role | Email | Use for |
 |------|-------|---------|
-| Admin | admin@desklite.local | Dashboard, assign tickets |
-| Agent | agent@desklite.local | Queue, status transitions |
-| Customer | customer@desklite.local | Create/view own tickets |
+| Admin | `admin@desklite.dev` | Dashboard, assign tickets |
+| Agent | `agent@desklite.dev` | Queue, status transitions |
+| Customer | `customer@desklite.dev` | Create/view own tickets |
+
+Full demo script: [`docs/DEMO.md`](docs/DEMO.md).
 
 ## Run tests
 
