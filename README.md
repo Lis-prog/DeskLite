@@ -53,3 +53,65 @@ docker compose down -v           # stop + wipe DB volume
 | Paulina Delija | Backend / Data |
 | Rrezart Buzuku | Full-Stack Integration |
 | Lis Pruthi | DevOps & QA |
+
+## Demo data (presentation)
+
+Load realistic users and tickets after the stack is up:
+
+```bash
+docker compose exec backend python seed.py
+```
+
+Example logins (after seed — see script output for current passwords if customized):
+
+| Role | Email | Use for |
+|------|-------|---------|
+| Admin | admin@desklite.local | Dashboard, assign tickets |
+| Agent | agent@desklite.local | Queue, status transitions |
+| Customer | customer@desklite.local | Create/view own tickets |
+
+## Run tests
+
+```bash
+# Backend (inside container)
+docker compose exec backend pytest
+docker compose exec backend ruff check .
+
+# Frontend
+docker compose exec frontend npm run lint
+docker compose exec frontend npm run typecheck
+docker compose exec frontend npm run build
+```
+
+## End-to-end tests (Playwright)
+
+Requires the stack running at http://localhost:3000.
+
+```bash
+cd e2e
+npm ci
+npx playwright install chromium
+npm test
+```
+
+Set `BASE_URL=http://localhost:3000` if the app runs elsewhere.
+
+## Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| `docker compose` fails on Windows | Start Docker Desktop; wait for "Engine running" |
+| Port 3000/8000 in use | Stop other apps or change ports in `docker-compose.yml` |
+| Backend unhealthy | `docker compose logs -f backend` then `docker compose exec backend alembic upgrade head` |
+| Login fails locally | Copy `.env.example` → `.env`; use `COOKIE_SECURE=false` for http://localhost |
+| CI fails on coverage | Add tests under `backend/tests/`; floor is 80% (`cov-fail-under=80`) |
+| Staging deploy fails | Set GitHub secrets `STAGING_VPS_*` (see `DEPLOY.md`) |
+| Uptime workflow skips | Set repo variable `HEALTHCHECK_URL` to your API base URL |
+
+## GitHub repo variables (optional)
+
+| Variable | Purpose |
+|----------|---------|
+| `STAGING_URL` | Link shown on staging deploy workflow |
+| `HEALTHCHECK_URL` | Enables scheduled uptime probes in `.github/workflows/uptime.yml` |
+
