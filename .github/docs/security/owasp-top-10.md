@@ -161,10 +161,12 @@ phase.
   what (before/after), and when (`backend/app/services/audit.py`,
   `backend/app/models/audit_log.py`).
 
-Planned: centralized error tracking (Sentry) and structured request tracing with
-correlation IDs are Sprint 4 deliverables and not yet implemented.
+**Observability** — unhandled API errors are reported to Sentry when `SENTRY_DSN`
+is set (`backend/app/core/sentry.py`); events include the `request_id` tag so
+they align with structured logs and request tracing
+(`backend/app/core/request_tracing.py`, `backend/app/core/logging_config.py`).
 
-Evidence: `backend/tests/test_resolution_and_audit.py`.
+Evidence: `backend/tests/test_resolution_and_audit.py`, `backend/tests/test_sentry_integration.py`.
 
 ## A10 — Server-Side Request Forgery (SSRF) ⚪
 

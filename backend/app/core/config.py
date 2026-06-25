@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     # Emit single-line JSON logs (good for aggregation). When unset, defaults to
     # JSON in production and human-readable console logs elsewhere.
     log_json: bool | None = None
+    # Sentry DSN for unhandled error reporting. Leave empty to disable (local dev/CI).
+    sentry_dsn: str = ""
 
 
     @property

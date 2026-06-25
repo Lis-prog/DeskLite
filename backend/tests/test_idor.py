@@ -7,7 +7,7 @@ leak the victim's data in the response body.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from unittest.mock import MagicMock
 
@@ -239,10 +239,13 @@ def test_idor_metrics_exclude_other_users_tickets(client, db_session):
 def test_idor_resolution_time_scoped_to_visible_tickets(client, db_session):
     owner = create_user(db_session, email="idor-res-owner@test.com", role="customer")
     other = create_user(db_session, email="idor-res-other@test.com", role="customer")
+    base = datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC)
     mine = create_ticket(db_session, requester_id=owner.id, status="resolved")
-    mine.resolved_at = datetime.now(UTC)
+    mine.created_at = base
+    mine.resolved_at = base + timedelta(hours=1)
     other_ticket = create_ticket(db_session, requester_id=other.id, status="resolved")
-    other_ticket.resolved_at = datetime.now(UTC)
+    other_ticket.created_at = base
+    other_ticket.resolved_at = base + timedelta(hours=2)
     db_session.flush()
 
     res = client.get(METRICS_RESOLUTION, headers=auth_header(owner))
